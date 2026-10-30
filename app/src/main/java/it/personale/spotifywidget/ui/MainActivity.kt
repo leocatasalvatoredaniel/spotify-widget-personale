@@ -13,17 +13,19 @@ import androidx.activity.enableEdgeToEdge
 import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ListItem
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -41,11 +43,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import it.personale.spotifywidget.R
@@ -103,22 +105,81 @@ private fun colorScheme(context: Context, dark: Boolean): ColorScheme = when {
     else -> lightColorScheme()
 }
 
+/** State of the favorite playlists, shared by the card and the list below it */
+private class PlaylistsState {
+    var favorites by mutableStateOf<List<PlaylistItem>>(emptyList())
+    var playlists by mutableStateOf<List<SpotifyPlaylist>?>(null)
+    var loading by mutableStateOf(false)
+    var error by mutableStateOf<String?>(null)
+}
+
 @Composable
 private fun SettingsScreen(resumes: Int) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .safeDrawingPadding()
-            .verticalScroll(rememberScrollState())
-            .padding(16.dp),
+    val context = LocalContext.current
+    val app = context.app
+    val scope = rememberCoroutineScope()
+    val playlists = remember { PlaylistsState() }
+    LaunchedEffect(resumes) { playlists.favorites = app.store.read().favorites }
+
+    fun toggle(playlist: SpotifyPlaylist) {
+        scope.launch {
+            val selected = playlists.favorites.any { it.uri == playlist.uri }
+            val updated = app.store.update { state ->
+                val list = if (selected) {
+                    state.favorites.filterNot { it.uri == playlist.uri }
+                } else {
+                    state.favorites + PlaylistItem(
+                        uri = playlist.uri,
+                        name = playlist.name,
+                        imageUrl = playlist.images.bestFor(COVER_SIZE_PX),
+                    )
+                }
+                state.copy(favorites = list.take(MAX_FAVORITES))
+            }
+            playlists.favorites = updated.favorites
+            updateWidgets(context)
+            // Covers are downloaded in the background
+            RefreshWorker.refreshSoon(context, 0)
+        }
+    }
+
+    // A lazy list: the account can have hundreds of playlists
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().safeDrawingPadding(),
+        contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineMedium)
-        Text(stringResource(R.string.settings_intro), style = MaterialTheme.typography.bodyMedium)
-        AccessCard(resumes)
-        AccountCard(resumes)
-        PlaylistsCard(resumes)
-        WidgetCard()
+        item {
+            Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineMedium)
+        }
+        item {
+            Text(stringResource(R.string.settings_intro), style = MaterialTheme.typography.bodyMedium)
+        }
+        item { AccessCard(resumes) }
+        item { AccountCard(resumes) }
+        if (app.auth.isLoggedIn) {
+            item {
+                PlaylistsCard(playlists) {
+                    playlists.loading = true
+                    scope.launch {
+                        runCatching { app.api.myPlaylists() }
+                            .onSuccess { playlists.playlists = it; playlists.error = null }
+                            .onFailure { playlists.error = it.message }
+                        playlists.loading = false
+                    }
+                }
+            }
+            items(playlists.playlists.orEmpty(), key = { it.uri }) { playlist ->
+                val checked = playlists.favorites.any { it.uri == playlist.uri }
+                PlaylistRow(
+                    playlist = playlist,
+                    checked = checked,
+                    enabled = checked || playlists.favorites.size < MAX_FAVORITES,
+                    onToggle = { toggle(playlist) },
+                )
+            }
+        }
+        item { WidgetCard() }
     }
 }
 
@@ -210,75 +271,50 @@ private fun AccountCard(resumes: Int) {
 }
 
 @Composable
-private fun PlaylistsCard(resumes: Int) {
-    val context = LocalContext.current
-    val app = context.app
-    val scope = rememberCoroutineScope()
-    var favorites by remember { mutableStateOf<List<PlaylistItem>>(emptyList()) }
-    var playlists by remember { mutableStateOf<List<SpotifyPlaylist>?>(null) }
-    var loading by remember { mutableStateOf(false) }
-    var error by remember { mutableStateOf<String?>(null) }
-
-    LaunchedEffect(resumes) { favorites = app.store.read().favorites }
-    if (!app.auth.isLoggedIn) return
-
-    fun toggle(playlist: SpotifyPlaylist) {
-        scope.launch {
-            val selected = favorites.any { it.uri == playlist.uri }
-            val updated = app.store.update { state ->
-                val list = if (selected) {
-                    state.favorites.filterNot { it.uri == playlist.uri }
-                } else {
-                    state.favorites + PlaylistItem(
-                        uri = playlist.uri,
-                        name = playlist.name,
-                        imageUrl = playlist.images.bestFor(COVER_SIZE_PX),
-                    )
-                }
-                state.copy(favorites = list.take(MAX_FAVORITES))
-            }
-            favorites = updated.favorites
-            updateWidgets(context)
-            // Covers are downloaded in the background
-            RefreshWorker.refreshSoon(context, 0)
-        }
-    }
-
+private fun PlaylistsCard(state: PlaylistsState, onLoad: () -> Unit) {
     SettingsCard(stringResource(R.string.playlists_title)) {
         Text(
             pluralStringResource(R.plurals.playlists_explanation, MAX_FAVORITES, MAX_FAVORITES),
             style = MaterialTheme.typography.bodyMedium,
         )
-        favorites.forEach { favorite ->
+        state.favorites.forEach { favorite ->
             Text("• ${favorite.name}", maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        val list = playlists
+        val list = state.playlists
         when {
-            loading -> Text(stringResource(R.string.playlists_loading))
-            list == null -> Button(onClick = {
-                loading = true
-                scope.launch {
-                    runCatching { app.api.myPlaylists() }
-                        .onSuccess { playlists = it; error = null }
-                        .onFailure { error = it.message }
-                    loading = false
-                }
-            }) { Text(stringResource(R.string.playlists_load)) }
+            state.loading -> Text(stringResource(R.string.playlists_loading))
+            list == null -> Button(onClick = onLoad) { Text(stringResource(R.string.playlists_load)) }
             list.isEmpty() -> Text(stringResource(R.string.playlists_empty))
-            else -> list.forEach { playlist ->
-                val checked = favorites.any { it.uri == playlist.uri }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(
-                        checked = checked,
-                        enabled = checked || favorites.size < MAX_FAVORITES,
-                        onCheckedChange = { toggle(playlist) },
-                    )
-                    Text(playlist.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-            }
         }
-        error?.let { Text(stringResource(R.string.playlists_error, it), color = MaterialTheme.colorScheme.error) }
+        state.error?.let {
+            Text(stringResource(R.string.playlists_error, it), color = MaterialTheme.colorScheme.error)
+        }
     }
+}
+
+/**
+ * The whole row toggles the playlist: a 56 dp touch target, read by TalkBack
+ * as one checkbox with its name
+ */
+@Composable
+private fun PlaylistRow(
+    playlist: SpotifyPlaylist,
+    checked: Boolean,
+    enabled: Boolean,
+    onToggle: () -> Unit,
+) {
+    ListItem(
+        headlineContent = {
+            Text(playlist.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        },
+        leadingContent = { Checkbox(checked = checked, onCheckedChange = null, enabled = enabled) },
+        modifier = Modifier.toggleable(
+            value = checked,
+            enabled = enabled,
+            role = Role.Checkbox,
+            onValueChange = { onToggle() },
+        ),
+    )
 }
 
 @Composable
