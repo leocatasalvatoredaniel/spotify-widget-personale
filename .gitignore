@@ -1,0 +1,17 @@
+# Gradle and Android Studio
+.gradle/
+build/
+/app/build/
+.idea/
+*.iml
+.kotlin/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Personal configuration: SDK path and Spotify Client ID
+local.properties
+
+# Signing keys
+*.jks
+*.keystore
