@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Widget Musica</string>
+    <string name="widget_label">Musica</string>
+    <string name="widget_description">Brano in riproduzione su Spotify, comandi, Mi piace, playlist preferite e ascoltati di recente</string>
+
+    <!-- Widget -->
+    <string name="widget_not_logged_in">Apri Widget Musica e collega Spotify</string>
+    <string name="widget_no_access">Apri Widget Musica e concedi l\'accesso alle notifiche</string>
+    <string name="widget_nothing_playing">Niente in riproduzione</string>
+    <string name="widget_open_spotify">Tocca per aprire Spotify</string>
+    <string name="widget_recent">Ascoltati di recente</string>
+    <string name="action_play">Riproduci</string>
+    <string name="action_pause">Metti in pausa</string>
+    <string name="action_next">Brano successivo</string>
+    <string name="action_previous">Brano precedente</string>
+    <string name="action_like">Aggiungi ai Brani che ti piacciono</string>
+    <string name="action_unlike">Rimuovi dai Brani che ti piacciono</string>
+    <string name="cover">Copertina</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Widget Musica</string>
+    <string name="settings_intro">Widget per Spotify: brano in riproduzione, comandi, Mi piace, playlist preferite e ascoltati di recente.</string>
+    <string name="account_title">Account Spotify</string>
+    <string name="account_missing_client_id">Manca il Client ID di Spotify: aggiungi spotify.clientId nel file local.properties e ricompila l\'app.</string>
+    <string name="account_logged_out">Collega il tuo account Spotify Premium per Mi piace, playlist e ascoltati di recente.</string>
+    <string name="account_connect">Collega Spotify</string>
+    <string name="account_disconnect">Scollega</string>
+    <string name="account_connected">Collegato come %1$s</string>
+    <string name="account_not_premium">Questo account non è Premium: la Web API di Spotify non avvia la riproduzione senza Premium.</string>
+    <string name="account_error">Impossibile leggere l\'account: %1$s</string>
+    <string name="access_title">Accesso alle notifiche</string>
+    <string name="access_explanation">Serve per vedere in tempo reale cosa suona Spotify e per i comandi play, pausa e brano successivo. L\'app usa solo la riproduzione: non legge né salva le notifiche.</string>
+    <string name="access_granted">Accesso concesso</string>
+    <string name="access_grant">Concedi l\'accesso</string>
+    <string name="playlists_title">Playlist nel widget</string>
+    <plurals name="playlists_explanation">
+        <item quantity="one">Scegli %1$d playlist da avviare con un tocco.</item>
+        <item quantity="other">Scegli fino a %1$d playlist da avviare con un tocco.</item>
+    </plurals>
+    <string name="playlists_load">Carica le mie playlist</string>
+    <string name="playlists_loading">Caricamento…</string>
+    <string name="playlists_empty">Nessuna playlist trovata</string>
+    <string name="playlists_error">Impossibile caricare le playlist: %1$s</string>
+    <string name="widget_title">Widget</string>
+    <string name="widget_add">Aggiungi alla schermata Home</string>
+    <string name="widget_refresh">Aggiorna ora</string>
+    <string name="widget_hint">Puoi anche tenere premuto sulla schermata Home → Widget → Widget Musica.</string>
+
+    <!-- Login and playback -->
+    <string name="login_failed">Accesso a Spotify non riuscito: %1$s</string>
+    <string name="login_done">Spotify collegato</string>
+    <string name="play_failed">Impossibile avviare la riproduzione: %1$s</string>
+    <string name="play_premium_required">Spotify Premium richiesto per avviare la riproduzione dal widget</string>
+    <string name="play_login_required">Collega Spotify nell\'app Widget Musica</string>
+    <string name="play_starting">Avvio su Spotify…</string>
+    <string name="like_failed">Impossibile aggiornare i Brani che ti piacciono</string>
+</resources>
