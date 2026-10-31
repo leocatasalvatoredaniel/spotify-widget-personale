@@ -78,11 +78,13 @@ I widget Samsung sfocano lo sfondo che hanno dietro, ne rinforzano i colori e lo
 2. Android apre la pagina **Accesso a tutti i file**: attivalo per *Widget Musica*. Da Android 13 è l'unico modo per un'app di leggere lo sfondo del telefono. L'app non ha accesso a internet, quindi lo sfondo non esce dal telefono.
 3. **Tocca il widget una volta**, anche su un pulsante: Android non dice all'app dove si trova il widget sulla schermata Home, il tocco sì. Se sposti il widget, toccalo di nuovo.
 
+Su One UI anche una foto può essere disegnata da un'app di sfondi (Android la segnala come sfondo animato): l'app prova comunque a leggerne l'immagine. Se il telefono non la dà, compare **Immagine dello sfondo**: scegli la stessa foto che usi come sfondo e il widget sfoca quella, adattata allo schermo come fa One UI (riempie lo schermo, centrata). Se cambi lo sfondo, sceglila di nuovo.
+
 Sfocatura, colori rinforzati e velo al 50%, scuro e chiaro, sono misurati sulla Home accanto a un widget Samsung al 50% sullo stesso sfondo: la differenza è di circa 5/255. Scuro e chiaro hanno la stessa sfocatura e la stessa trasparenza, cambia solo il colore del velo. Opacità 0 e 100 sono stimate dall'anteprima delle impostazioni dei widget Samsung.
 
 Senza sfocatura (spenta, prima del primo tocco, con uno sfondo animato o se il telefono non dà l'immagine dello sfondo) resta un velo di colore. Il velo al 50%, scuro o chiaro, lascia passare la stessa luce del widget Samsung e prende i colori dello sfondo rinforzati, così il colore medio coincide; manca la sfocatura. Il colore dello sfondo viene dall'immagine dello sfondo se l'app la può leggere, altrimenti dal telefono (da Android 12); se nessuno dei due lo dà, il velo è grigio neutro. Sotto **Sfondo del widget**, nell'app, è scritto quale caso vale. Per somigliare agli altri widget della Home usa la loro stessa opacità.
 
-Il testo usa il font di sistema Samsung (One UI Sans), come il player della tendina. I widget prendono il font di Android a meno che non si indichi una famiglia di sistema per nome: l'app la cerca negli elenchi dei font del telefono. In **Widget**, nell'app, è scritto quale ha trovato; se non la trova, il testo resta nel font di Android.
+Il testo usa il font di sistema Samsung (One UI Sans), come il player della tendina. I widget prendono il font di Android a meno che non si indichi una famiglia di sistema per nome: l'app la cerca negli elenchi dei font del telefono. In **Widget**, nell'app, è scritto quale ha trovato; se non la trova, il testo resta nel font di Android e lì sono elencati i file dei font che l'app vede, per capire come si chiama sul telefono.
 
 Il colore della barra segue la stessa regola di One UI: la tinta della copertina, satura, oppure blu notte per le copertine in bianco e nero.
 

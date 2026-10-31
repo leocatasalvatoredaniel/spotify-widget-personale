@@ -26,12 +26,25 @@ data class SystemFont(
 
         /** Looks up the font on this phone; null where the system has no Samsung font */
         fun find(): SystemFont? = runCatching {
-            val lists = FOLDERS.flatMap { folder ->
-                File(folder).listFiles { file -> file.name.contains("font") && file.name.endsWith(".xml") }
-                    .orEmpty().toList()
-            }.map { it.readText() }
-            parse(lists)?.takeIf { usable(it.family) }
+            parse(lists().map { it.readText() })?.takeIf { usable(it.family) }
         }.getOrNull()
+
+        /** What the search sees on this phone, to tell why no font was found */
+        fun report(): FontReport = runCatching {
+            val lists = lists()
+            val files = FONT_FOLDERS.flatMap { File(it).listFiles()?.map { file -> file.name }.orEmpty() }
+                .filter { name -> SAMSUNG_FILES.any { name.lowercase().contains(it) } }
+                .sorted()
+            FontReport(lists.map { it.path }, files, parse(lists.map { it.readText() })?.family)
+        }.getOrDefault(FontReport(emptyList(), emptyList(), null))
+
+        private fun lists(): List<File> = FOLDERS.flatMap { folder ->
+            File(folder).listFiles { file -> file.name.contains("font") && file.name.endsWith(".xml") }
+                .orEmpty().toList()
+        }
+
+        // Folders of the font files
+        private val FONT_FOLDERS = listOf("/system/fonts", "/product/fonts")
 
         /** The family really exists: an unknown name gives the default font */
         private fun usable(family: String): Boolean =
@@ -78,3 +91,13 @@ data class SystemFont(
         private val FONT_FILE = Regex("<font\\b[^>]*>\\s*([^<\\s]+)")
     }
 }
+
+/** What the search of [SystemFont] sees on this phone */
+data class FontReport(
+    /** Font lists read */
+    val lists: List<String>,
+    /** Files of fonts whose name is of a Samsung font */
+    val samsungFiles: List<String>,
+    /** Family found in the lists, even if Android does not load it */
+    val family: String?,
+)

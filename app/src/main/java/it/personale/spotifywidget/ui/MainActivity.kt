@@ -11,8 +11,11 @@ import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -27,6 +30,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -40,6 +44,8 @@ import it.personale.spotifywidget.app
 import it.personale.spotifywidget.data.WidgetBackground
 import it.personale.spotifywidget.playback.Playback
 import it.personale.spotifywidget.widget.SpotifyWidgetReceiver
+import it.personale.spotifywidget.widget.FontReport
+import it.personale.spotifywidget.widget.SystemFont
 import it.personale.spotifywidget.widget.Wallpaper
 import it.personale.spotifywidget.widget.WallpaperBlur
 import it.personale.spotifywidget.widget.WidgetRenderer
@@ -134,9 +140,22 @@ private fun SettingsScreen(resumes: Int) {
             ),
         )
         val font = remember { context.app.systemFont }
+        // Without the font, what the phone has: to find the name of the Samsung font
+        val fontReport by produceState<FontReport?>(null) {
+            if (font == null) value = withContext(Dispatchers.IO) { SystemFont.report() }
+        }
+        val report = fontReport
         OneUiFooter(
-            if (font != null) stringResource(R.string.font_samsung, font.family, font.file)
-            else stringResource(R.string.font_android),
+            when {
+                font != null -> stringResource(R.string.font_samsung, font.family, font.file)
+                report == null -> stringResource(R.string.font_android)
+                else -> stringResource(
+                    R.string.font_android_report,
+                    report.lists.joinToString().ifEmpty { "–" },
+                    report.samsungFiles.take(8).joinToString().ifEmpty { "–" },
+                    report.family?.let { stringResource(R.string.font_not_loaded, it) }.orEmpty(),
+                )
+            },
         )
         if (samsungActivities != null && output.kind != Playback.OutputSwitcher.Kind.SAMSUNG) {
             OneUiFooter(
@@ -173,9 +192,20 @@ private fun BackgroundSection(resumes: Int) {
     LaunchedEffect(Unit) { background = app.store.read().background }
     val canRead = remember(resumes) { WallpaperBlur.canRead() }
     // What the blur can do now: reading the wallpaper takes a moment
-    var blur by remember { mutableStateOf<BlurState?>(null) }
-    LaunchedEffect(resumes, background) {
-        blur = if (background.cover || !background.blur) null else withContext(Dispatchers.IO) { blurState(context) }
+    var blur by remember { mutableStateOf<BlurInfo?>(null) }
+    var picked by remember { mutableIntStateOf(0) }
+    LaunchedEffect(resumes, background, picked) {
+        blur = if (background.cover || !background.blur) null else withContext(Dispatchers.IO) { blurInfo(context) }
+    }
+    // The photo of the wallpaper, when the phone does not give it
+    val pickPhoto = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val saved = withContext(Dispatchers.IO) { WallpaperBlur.savePicked(context, uri) }
+            if (!saved) Toast.makeText(context, R.string.open_failed, Toast.LENGTH_SHORT).show()
+            picked++
+            WidgetRenderer.renderAll(context.applicationContext)
+        }
     }
 
     fun change(updated: WidgetBackground) {
@@ -232,6 +262,22 @@ private fun BackgroundSection(resumes: Int) {
                     },
                 )
             }
+            val status = blur?.status
+            if (background.blur && (status == WallpaperBlur.Status.NO_IMAGE || status == WallpaperBlur.Status.PICKED)) {
+                rows += {
+                    OneUiRow(
+                        title = stringResource(R.string.wallpaper_image_title),
+                        summary = stringResource(
+                            if (status == WallpaperBlur.Status.PICKED) R.string.wallpaper_image_picked
+                            else R.string.wallpaper_image_pick,
+                        ),
+                        summaryIsValue = status == WallpaperBlur.Status.PICKED,
+                        onClick = {
+                            pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        },
+                    )
+                }
+            }
         }
     }
     OneUiCard(rows)
@@ -248,33 +294,39 @@ private fun BackgroundSection(resumes: Int) {
                 else -> R.string.wallpaper_color_missing
             }
         }
+        val info = blur
+        val where = if (info?.positionsKnown == true) R.string.blur_moved else R.string.blur_tap
         val explanation = when {
             !background.blur -> stringResource(wallpaper)
-            !canRead -> stringResource(R.string.blur_access)
-            else -> when (blur) {
-                null -> null
-                BlurState.LIVE -> stringResource(R.string.blur_live)
-                BlurState.UNREADABLE -> stringResource(R.string.blur_unreadable)
-                BlurState.TAP -> stringResource(R.string.blur_tap)
-                BlurState.READY -> stringResource(R.string.blur_ready)
-            }
+            !canRead && info?.status != WallpaperBlur.Status.PICKED -> stringResource(R.string.blur_access)
+            info == null -> null
+            info.status == WallpaperBlur.Status.READY ->
+                stringResource(R.string.blur_ready) + " " + stringResource(where)
+            info.status == WallpaperBlur.Status.PICKED ->
+                stringResource(R.string.blur_picked) + " " + stringResource(where)
+            info.status == WallpaperBlur.Status.NO_IMAGE -> stringResource(
+                R.string.blur_no_image,
+                info.drawnBy?.let { (name, pkg) -> stringResource(R.string.blur_drawn_by, name, pkg) }.orEmpty(),
+            )
+            else -> null
         }
         OneUiFooter(listOfNotNull(stringResource(R.string.background_samsung_footer), explanation).joinToString(" "))
     }
 }
 
-private enum class BlurState { LIVE, UNREADABLE, TAP, READY }
-
 /** Whether the widgets can blur the wallpaper, or what is missing */
-private suspend fun blurState(context: Context): BlurState? = when (WallpaperBlur.status(context)) {
-    WallpaperBlur.Status.LIVE -> BlurState.LIVE
-    WallpaperBlur.Status.UNREADABLE -> BlurState.UNREADABLE
-    WallpaperBlur.Status.READY -> {
-        val positions = context.app.store.read().positions
-        val ids = AppWidgetManager.getInstance(context).getAppWidgetIds(WidgetRenderer.component(context))
-        if (ids.all { it in positions }) BlurState.READY else BlurState.TAP
-    }
-    else -> null
+private class BlurInfo(
+    val status: WallpaperBlur.Status,
+    /** A tap told where each widget is */
+    val positionsKnown: Boolean,
+    /** App that draws the wallpaper, when it is not a plain image */
+    val drawnBy: Pair<String, String>?,
+)
+
+private suspend fun blurInfo(context: Context): BlurInfo {
+    val positions = context.app.store.read().positions
+    val ids = AppWidgetManager.getInstance(context).getAppWidgetIds(WidgetRenderer.component(context))
+    return BlurInfo(WallpaperBlur.status(context), ids.all { it in positions }, WallpaperBlur.drawnBy(context))
 }
 
 /** The page of the system where the app gets the access to all files */
