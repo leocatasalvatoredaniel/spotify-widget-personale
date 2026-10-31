@@ -5,10 +5,9 @@
     <!-- Background of the pages of One UI 9 -->
     <color name="page_background">#FFF3F3F5</color>
 
-    <!-- Widget: white text on the cover darkened by the scrim. At 60% even a
-         white cover keeps the text above 4.5:1 -->
+    <!-- Widget: white text on the shaded cover -->
     <color name="widget_background">#FF22272A</color>
-    <color name="widget_scrim">#99000000</color>
     <color name="widget_text">#FFFFFFFF</color>
-    <color name="widget_text_secondary">#D9FFFFFF</color>
+    <color name="widget_text_secondary">#E6FFFFFF</color>
+    <color name="widget_text_tertiary">#99FFFFFF</color>
 </resources>

@@ -10,6 +10,7 @@ import android.graphics.Bitmap
 import android.graphics.drawable.Icon
 import android.os.Build
 import android.os.Bundle
+import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
 import it.personale.spotifywidget.R
@@ -25,6 +26,7 @@ import it.personale.spotifywidget.ui.LaunchSpotifyActivity
 import it.personale.spotifywidget.ui.MainActivity
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlin.math.roundToInt
 
 /**
  * Draws the widget as the media player of the system: the cover fills the
@@ -79,16 +81,24 @@ object WidgetRenderer {
     private fun player(context: Context, data: WidgetData, nowPlaying: NowPlaying, options: Bundle): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_player)
 
-        if (data.art != null) views.setImageViewBitmap(R.id.art, data.art)
+        // Sizes in portrait, where the home screen of a phone is used
+        val widthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
+        val heightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT)
+        val density = context.resources.displayMetrics.density
+        val metrics = PlayerMetrics.forSize(widthDp, heightDp)
+        views.applyMetrics(metrics, density)
+
+        val background = data.cover?.let {
+            PlayerBackground.render(
+                it,
+                ((widthDp.takeIf { w -> w > 0 } ?: DEFAULT_WIDTH_DP) * density).toInt(),
+                ((heightDp.takeIf { h -> h > 0 } ?: DEFAULT_HEIGHT_DP) * density).toInt(),
+            )
+        }
+        if (background != null) views.setImageViewBitmap(R.id.art, background)
         else views.setImageViewResource(R.id.art, 0)
         views.setOnClickPendingIntent(R.id.content, openSpotify(context))
 
-        // Small widgets drop the output device, then the times
-        val height = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT)
-        val small = height in 1 until FULL_HEIGHT_DP
-        val tiny = height in 1 until TIMES_HEIGHT_DP
-
-        views.setViewVisibility(R.id.output, if (small) View.GONE else View.VISIBLE)
         views.setTextViewText(R.id.device, data.device)
         views.setContentDescription(R.id.output, context.getString(R.string.output_description, data.device))
         views.setOnClickPendingIntent(R.id.output, outputSwitcher(context, data.output))
@@ -114,7 +124,7 @@ object WidgetRenderer {
         }
         views.setViewVisibility(
             R.id.times,
-            if (tiny || nowPlaying.durationMs <= 0) View.GONE else View.VISIBLE,
+            if (!metrics.showTimes || nowPlaying.durationMs <= 0) View.GONE else View.VISIBLE,
         )
         views.setTextViewText(R.id.elapsed, formatTime(position))
         views.setTextViewText(R.id.duration, formatTime(nowPlaying.durationMs))
@@ -207,9 +217,9 @@ object WidgetRenderer {
     const val ACTION_CUSTOM = "it.personale.spotifywidget.CUSTOM_ACTION"
     const val EXTRA_CUSTOM_ACTION = "custom_action"
 
-    // Heights (dp) under which the output device and the times are hidden
-    private const val FULL_HEIGHT_DP = 150
-    private const val TIMES_HEIGHT_DP = 126
+    // Size of the player when the launcher does not report it
+    private const val DEFAULT_WIDTH_DP = 360
+    private const val DEFAULT_HEIGHT_DP = 160
 
     private const val REQUEST_OPEN = 1
     private const val REQUEST_APP = 2
@@ -221,13 +231,66 @@ object WidgetRenderer {
     private const val REQUEST_CUSTOM = 10
 }
 
+/**
+ * Scales the player to the size of the widget: text everywhere, sizes and
+ * margins from Android 12, where widgets can change them
+ */
+internal fun RemoteViews.applyMetrics(metrics: PlayerMetrics, density: Float) {
+    val scale = metrics.scale
+    fun px(dp: Float) = (dp * scale * density).roundToInt()
+
+    setViewVisibility(R.id.output, if (metrics.showOutput) View.VISIBLE else View.GONE)
+    // The output button stays at the end even without the name of the device
+    setViewVisibility(R.id.device, if (metrics.showDeviceName) View.VISIBLE else View.INVISIBLE)
+    val actions = if (metrics.showActions) View.VISIBLE else View.GONE
+    setViewVisibility(R.id.cell_start, actions)
+    setViewVisibility(R.id.cell_end, actions)
+
+    setViewPadding(R.id.content, px(24f), px(14f), px(20f), px(8f))
+    setTextViewTextSize(R.id.device, TypedValue.COMPLEX_UNIT_SP, 12f * scale)
+    setTextViewTextSize(R.id.title, TypedValue.COMPLEX_UNIT_SP, 15f * scale)
+    setTextViewTextSize(R.id.elapsed, TypedValue.COMPLEX_UNIT_SP, 12f * scale)
+    setTextViewTextSize(R.id.duration, TypedValue.COMPLEX_UNIT_SP, 12f * scale)
+    BUTTONS.forEach { (id, padding) ->
+        val inset = px(padding)
+        setViewPadding(id, inset, inset, inset, inset)
+    }
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+
+    val dip = TypedValue.COMPLEX_UNIT_DIP
+    setViewLayoutWidth(R.id.output_icon, 24f * scale, dip)
+    setViewLayoutHeight(R.id.output_icon, 24f * scale, dip)
+    setViewLayoutMargin(R.id.title_row, RemoteViews.MARGIN_TOP, 4f * scale, dip)
+    setViewLayoutWidth(R.id.app_icon, 16f * scale, dip)
+    setViewLayoutHeight(R.id.app_icon, 16f * scale, dip)
+    setViewLayoutMargin(R.id.app_icon, RemoteViews.MARGIN_END, 6f * scale, dip)
+    setViewLayoutHeight(R.id.progress, 4f * scale, dip)
+    setViewLayoutMargin(R.id.times, RemoteViews.MARGIN_TOP, 6f * scale, dip)
+    setViewLayoutHeight(R.id.controls, 48f * scale, dip)
+    setViewLayoutMargin(R.id.controls, RemoteViews.MARGIN_START, 12f * scale, dip)
+    setViewLayoutMargin(R.id.controls, RemoteViews.MARGIN_END, 16f * scale, dip)
+    BUTTONS.forEach { (id, _) ->
+        setViewLayoutWidth(id, 48f * scale, dip)
+        setViewLayoutHeight(id, 48f * scale, dip)
+    }
+}
+
+// Buttons of the controls and the padding (dp) around their icon
+private val BUTTONS = listOf(
+    R.id.action_start to 12f,
+    R.id.previous to 13f,
+    R.id.play_pause to 12f,
+    R.id.next to 13f,
+    R.id.action_end to 12f,
+)
+
 /** What a drawing of the widget needs, read once for all the widgets */
 private class WidgetData(
     val state: WidgetState,
     val hasAccess: Boolean,
     /** Spotify has a media session: the buttons can control it */
     val sessionActive: Boolean,
-    val art: Bitmap?,
+    val cover: Bitmap?,
     val device: String,
     val output: Playback.OutputSwitcher,
 ) {
@@ -239,7 +302,7 @@ private class WidgetData(
                 state = state,
                 hasAccess = Playback.hasAccess(context),
                 sessionActive = controller != null,
-                art = ImageCache.load(state.nowPlaying?.artPath),
+                cover = ImageCache.load(state.nowPlaying?.artPath),
                 device = Playback.outputName(context, controller),
                 output = Playback.outputSwitcher(context),
             )

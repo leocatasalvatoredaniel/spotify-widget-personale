@@ -60,12 +60,17 @@ Nell'app trovi anche:
 | shuffle, + | le stesse funzioni dei pulsanti di Spotify nel player del sistema. Il + salva il brano in *Brani che ti piacciono* (La tua libreria): diventa ✓ e compare la conferma |
 | ⏮ ▶/⏸ ⏭ | comandi di riproduzione |
 
-Con un widget basso (meno di 2 righe) spariscono prima il dispositivo, poi i tempi.
+Il widget si ridimensiona liberamente: pulsanti, testo e margini crescono e si riducono con lui.
+
+- **Basso**: sparisce prima la riga del dispositivo, poi i tempi.
+- **Stretto** (circa 2 colonne): restano ⏮ ▶ ⏭ e il pulsante di uscita, come il player piccolo della tendina.
+
+Lo sfondo è la copertina sfumata come nel player di One UI: più chiara al centro in alto, più scura verso i lati e il basso.
 
 ## Limiti noti
 
 - **La barra non si trascina** e non ha il pallino: i widget di Android non supportano i cursori. Si aggiorna ogni secondo, solo con lo schermo acceso e la musica in riproduzione.
-- **Cambio uscita**: sui Samsung il widget apre il pannello multimediale di One UI (app di sistema *Media and devices*), come il player della tendina. Samsung non lo documenta: se un aggiornamento di One UI lo sposta o lo chiude alle altre app, il widget usa il pannello di uscita di Android e, in mancanza anche di quello, apre Spotify (*Dispositivi disponibili*). Nell'app, sezione **Widget**, c'è scritto quale pannello apre il pulsante.
+- **Cambio uscita**: su One UI 9 il widget apre il pannello di uscita di Android, non quello Samsung. Il selettore Samsung della tendina non si può aprire dalle altre app. Il pannello multimediale di *Media and devices* lo era sulle versioni precedenti di One UI: se è presente, il widget usa quello. Se manca anche il pannello di Android, apre Spotify (*Dispositivi disponibili*). Nell'app, sezione **Widget**, c'è scritto quale pannello apre il pulsante.
 - **Shuffle e +** dipendono da Spotify: se Spotify non risponde ai pulsanti premuti da un'altra app, non funzionano dal widget (play, pausa e brani funzionano comunque).
 - **Spotify chiuso**: resta l'ultimo brano, in pausa. Play apre Spotify e avvia la musica appena è pronto.
 - Il **titolo scorre** se il launcher lo permette; altrimenti viene tagliato.
