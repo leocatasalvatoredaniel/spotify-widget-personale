@@ -3,15 +3,20 @@ rem Builds the APK of the widget (see README.md)
 setlocal
 cd /d "%~dp0"
 
-rem Gradle needs Java 17 or newer: the one of Android Studio, or a JDK 17
+rem Gradle 8.14 runs on Java 17 to 24, not on Java 25: look for a JDK 17 first,
+rem then use the Java of Android Studio only if it is version 17 or 21
 set "JDKDIR="
-if exist "C:\Program Files\Android\Android Studio\jbr\bin\java.exe" set "JDKDIR=C:\Program Files\Android\Android Studio\jbr"
-if not defined JDKDIR for /d %%D in ("C:\Program Files\Microsoft\jdk-17*" "C:\Program Files\Eclipse Adoptium\jdk-17*" "C:\Program Files\Java\jdk-17*") do set "JDKDIR=%%~D"
+for /d %%D in ("C:\Program Files\Microsoft\jdk-17*" "C:\Program Files\Eclipse Adoptium\jdk-17*" "C:\Program Files\Java\jdk-17*") do set "JDKDIR=%%~D"
+set "JBR=C:\Program Files\Android\Android Studio\jbr"
+if not defined JDKDIR if exist "%JBR%\release" (
+  findstr /r /c:"JAVA_VERSION=.1[7]" /c:"JAVA_VERSION=.2[1]" "%JBR%\release" >nul && set "JDKDIR=%JBR%"
+)
 if not defined JDKDIR (
   echo Java 17 non trovato. Installalo con: winget install Microsoft.OpenJDK.17
   pause
   exit /b 1
 )
+echo Java usato: %JDKDIR%
 set "JAVA_HOME=%JDKDIR%"
 set "PATH=%JAVA_HOME%\bin;%PATH%"
 

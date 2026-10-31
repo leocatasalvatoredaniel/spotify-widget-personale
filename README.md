@@ -26,6 +26,7 @@ L'accesso a Spotify usa il flusso ufficiale con PKCE: l'app non contiene passwor
 
 - **Spotify Premium**: Spotify fa funzionare le app personali («modalità sviluppo») solo se il loro proprietario è Premium.
 - **Android Studio** installato, aperto almeno una volta (installa l'SDK Android).
+- **Java 17**: Gradle 8.14 non funziona con Java 25, che è quello incluso nelle versioni recenti di Android Studio. Se manca: `winget install Microsoft.OpenJDK.17`. Lo script lo trova da solo.
 - Telefono con Android 8.0 o successivo e l'app Spotify.
 
 ## 1. Registrare l'app su Spotify (una volta)
