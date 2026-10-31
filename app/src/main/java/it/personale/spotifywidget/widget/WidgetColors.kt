@@ -31,6 +31,39 @@ object WidgetColors {
         return fromHsl(hue, SATURATION, LIGHTNESS)
     }
 
+    /**
+     * Veil of the Samsung style. Samsung blurs what is behind its widgets, so
+     * their veil takes the colors of the wallpaper: here the main color of
+     * the wallpaper, dark or light, stands in for the blur. The veil covers
+     * 29% at opacity 0, 64% at 50 and 100% at 100 (measured on the Samsung
+     * widgets), and gets plain black or white towards 100% as theirs.
+     */
+    fun veil(wallpaperColor: Int?, dark: Boolean, opacity: Int): Int {
+        val level = opacity.coerceIn(0, 100) / 100f
+        val alpha = VEIL_MIN + (1 - VEIL_MIN) * level
+        val plain = if (dark) VEIL_DARK else VEIL_LIGHT
+        val tinted = wallpaperColor?.let {
+            val (hue, saturation, _) = hsl(it)
+            if (dark) fromHsl(hue, min(saturation, 0.6f), 0.1f) else fromHsl(hue, min(saturation, 0.3f), 0.94f)
+        } ?: plain
+        val color = mix(tinted, plain, level)
+        return ((alpha * 255).roundToInt() shl 24) or (color and 0xFFFFFF)
+    }
+
+    /** [from] moved towards [to] by [amount] (0-1) */
+    fun mix(from: Int, to: Int, amount: Float): Int {
+        fun channel(shift: Int): Int {
+            val a = (from shr shift) and 0xFF
+            val b = (to shr shift) and 0xFF
+            return (a + (b - a) * amount).roundToInt().coerceIn(0, 255)
+        }
+        return (0xFF shl 24) or (channel(16) shl 16) or (channel(8) shl 8) or channel(0)
+    }
+
+    private const val VEIL_MIN = 0.29f
+    private const val VEIL_DARK = 0xFF010101.toInt()
+    private const val VEIL_LIGHT = 0xFFFCFCFE.toInt()
+
     /** Hue (0-360), saturation and lightness (0-1) */
     fun hsl(color: Int): Triple<Float, Float, Float> {
         val r = ((color shr 16) and 0xFF) / 255f

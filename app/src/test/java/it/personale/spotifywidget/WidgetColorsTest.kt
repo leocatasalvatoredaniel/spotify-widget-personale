@@ -2,6 +2,7 @@ package it.personale.spotifywidget
 
 import it.personale.spotifywidget.widget.WidgetColors
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class WidgetColorsTest {
@@ -39,5 +40,20 @@ class WidgetColorsTest {
     @Test
     fun contrastOfBlackAndWhite() {
         assertEquals(21.0, WidgetColors.contrast(WidgetColors.WHITE, WidgetColors.BLACK), 0.01)
+    }
+
+    @Test
+    fun veilAsTheSamsungWidgets() {
+        // Plain black at full opacity, as the Samsung widgets
+        assertEquals(0xFF010101.toInt(), WidgetColors.veil(0xFF8A5A30.toInt(), dark = true, opacity = 100))
+        // 29% at opacity 0 and 64% at 50 (measured)
+        assertEquals(0x4A, WidgetColors.veil(null, dark = true, opacity = 0) ushr 24)
+        assertEquals(0xA4, WidgetColors.veil(null, dark = true, opacity = 50) ushr 24)
+        // Without opacity the veil takes the color of the wallpaper, dark or light
+        val (hue, saturation, lightness) = WidgetColors.hsl(WidgetColors.veil(0xFF8A5A30.toInt(), dark = true, opacity = 0))
+        assertEquals(28f, hue, 3f)
+        assertTrue(saturation > 0.3f)
+        assertEquals(0.1f, lightness, 0.02f)
+        assertTrue(WidgetColors.hsl(WidgetColors.veil(0xFF8A5A30.toInt(), dark = false, opacity = 0)).third > 0.9f)
     }
 }

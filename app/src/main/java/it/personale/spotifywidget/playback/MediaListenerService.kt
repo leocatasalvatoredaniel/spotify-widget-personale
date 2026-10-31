@@ -1,5 +1,7 @@
 package it.personale.spotifywidget.playback
 
+import android.app.Notification
+import android.app.WallpaperManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -79,8 +81,12 @@ class MediaListenerService : NotificationListenerService() {
         }
         getSystemService(AudioManager::class.java).registerAudioDeviceCallback(devicesCallback, handler)
         runCatching { activeNotifications }.getOrNull()
-            ?.firstOrNull { it.packageName == Playback.SPOTIFY_PACKAGE }
-            ?.let(::saveSpotifyIcon)
+            ?.filter { it.packageName == Playback.SPOTIFY_PACKAGE }
+            ?.forEach(::saveSpotifyIcon)
+        // The veil of the Samsung style takes the colors of the wallpaper (from Android 8.1)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            WallpaperManager.getInstance(this).addOnColorsChangedListener(wallpaperListener, handler)
+        }
         val component = Playback.listenerComponent(this)
         runCatching {
             manager.addOnActiveSessionsChangedListener(sessionsListener, component)
@@ -89,7 +95,16 @@ class MediaListenerService : NotificationListenerService() {
         }
     }
 
+    private val wallpaperListener by lazy {
+        WallpaperManager.OnColorsChangedListener { _, which ->
+            if (which and WallpaperManager.FLAG_SYSTEM != 0) app.scope.launch { WidgetRenderer.renderAll(app) }
+        }
+    }
+
     override fun onListenerDisconnected() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            WallpaperManager.getInstance(this).removeOnColorsChangedListener(wallpaperListener)
+        }
         sessionManager?.removeOnActiveSessionsChangedListener(sessionsListener)
         if (receiverRegistered) {
             runCatching { unregisterReceiver(screenReceiver) }
@@ -136,6 +151,8 @@ class MediaListenerService : NotificationListenerService() {
     private fun saveSpotifyIcon(notification: StatusBarNotification) {
         // The drawable of an icon can be read from Android 9
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return
+        // Only the notification of the player: the others (e.g. downloads) have other icons
+        if (!notification.notification.extras.containsKey(Notification.EXTRA_MEDIA_SESSION)) return
         val icon = notification.notification.smallIcon ?: return
         if (icon.type != Icon.TYPE_RESOURCE || icon.resPackage != Playback.SPOTIFY_PACKAGE) return
         val res = icon.resId

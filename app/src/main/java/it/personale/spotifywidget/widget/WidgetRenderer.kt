@@ -1,6 +1,7 @@
 package it.personale.spotifywidget.widget
 
 import android.app.PendingIntent
+import android.app.WallpaperManager
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
@@ -96,12 +97,11 @@ object WidgetRenderer {
     }
 
     private fun build(context: Context, data: WidgetData, options: Bundle): RemoteViews {
-        val style = data.state.background
         if (!data.hasAccess) {
-            return message(context, R.string.widget_no_access, activity(context, REQUEST_APP, appIntent(context)), style)
+            return message(context, R.string.widget_no_access, activity(context, REQUEST_APP, appIntent(context)), data)
         }
         val nowPlaying = data.state.nowPlaying
-            ?: return message(context, R.string.widget_open_spotify, openSpotify(context), style)
+            ?: return message(context, R.string.widget_open_spotify, openSpotify(context), data)
         return player(context, data, nowPlaying, options)
     }
 
@@ -114,7 +114,7 @@ object WidgetRenderer {
         val metrics = metricsOf(options)
         val style = data.state.background
         // Before the sizes: a new background resets the padding of the buttons
-        if (!style.cover) views.applyStyle(style)
+        views.applyStyle(style, data.wallpaperColor)
         views.applyMetrics(metrics, density)
 
         val background = data.cover?.takeIf { style.cover }?.let {
@@ -197,14 +197,13 @@ object WidgetRenderer {
         return views
     }
 
-    private fun message(context: Context, text: Int, click: PendingIntent, style: WidgetBackground): RemoteViews =
+    private fun message(context: Context, text: Int, click: PendingIntent, data: WidgetData): RemoteViews =
         RemoteViews(context.packageName, R.layout.widget_message).apply {
             setTextViewText(R.id.message, context.getString(text))
             setOnClickPendingIntent(android.R.id.background, click)
-            if (!style.cover) {
-                setInt(android.R.id.background, "setBackgroundResource", backgroundOf(style))
-                if (!style.dark) setTextColor(R.id.message, LIGHT_TEXT)
-            }
+            val style = data.state.background
+            setBackground(style, data.wallpaperColor)
+            setTextColor(R.id.message, if (style.cover || style.dark) WidgetColors.WHITE else LIGHT_TEXT)
         }
 
     private fun outputSwitcher(context: Context, output: Playback.OutputSwitcher): PendingIntent =
@@ -311,22 +310,46 @@ internal fun RemoteViews.applyMetrics(metrics: PlayerMetrics, density: Float) {
 }
 
 /**
- * Background as the widgets of Samsung, instead of the cover: a black or
- * white veil, with dark text and icons on the white one
+ * Colors of the widget: on the cover or on the dark veil white text and
+ * icons, on the light veil dark ones. Every property is set on every update:
+ * the launcher applies an update on top of the views it already shows, so a
+ * property left out would keep the color of the previous style.
  */
-internal fun RemoteViews.applyStyle(style: WidgetBackground) {
-    setInt(android.R.id.background, "setBackgroundResource", backgroundOf(style))
-    if (style.dark) return
-    setTextColor(R.id.device, LIGHT_SECONDARY)
-    setTextColor(R.id.title, LIGHT_TEXT)
-    setTextColor(R.id.elapsed, LIGHT_TERTIARY)
-    setTextColor(R.id.duration, LIGHT_TERTIARY)
+internal fun RemoteViews.applyStyle(style: WidgetBackground, wallpaperColor: Int?) {
+    setBackground(style, wallpaperColor)
+    val light = !style.cover && !style.dark
+    setTextColor(R.id.device, if (light) LIGHT_SECONDARY else DARK_SECONDARY)
+    setTextColor(R.id.title, if (light) LIGHT_TEXT else WidgetColors.WHITE)
+    setTextColor(R.id.elapsed, if (light) LIGHT_TERTIARY else DARK_TERTIARY)
+    setTextColor(R.id.duration, if (light) LIGHT_TERTIARY else DARK_TERTIARY)
+    val icons = if (light) LIGHT_TEXT else WidgetColors.WHITE
     listOf(R.id.output_icon, R.id.app_icon, R.id.action_start, R.id.previous, R.id.play_pause, R.id.next, R.id.action_end)
-        .forEach { setInt(it, "setColorFilter", LIGHT_TEXT) }
-    listOf(R.id.previous, R.id.play_pause, R.id.next)
-        .forEach { setInt(it, "setBackgroundResource", R.drawable.widget_button_round_light) }
+        .forEach { setInt(it, "setColorFilter", icons) }
+    val round = if (light) R.drawable.widget_button_round_light else R.drawable.widget_button_round
+    listOf(R.id.previous, R.id.play_pause, R.id.next).forEach { setInt(it, "setBackgroundResource", round) }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        setColorStateList(R.id.progress_track, "setProgressTintList", ColorStateList.valueOf(LIGHT_TEXT))
+        setColorStateList(R.id.progress_track, "setProgressTintList", ColorStateList.valueOf(icons))
+    }
+}
+
+/** The card: dark under the cover, or the veil of the Samsung style */
+private fun RemoteViews.setBackground(style: WidgetBackground, wallpaperColor: Int?) {
+    when {
+        style.cover -> {
+            setInt(android.R.id.background, "setBackgroundResource", R.drawable.widget_background)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                setColorStateList(android.R.id.background, "setBackgroundTintList", null)
+            }
+        }
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+            setInt(android.R.id.background, "setBackgroundResource", R.drawable.widget_background_veil)
+            setColorStateList(
+                android.R.id.background,
+                "setBackgroundTintList",
+                ColorStateList.valueOf(WidgetColors.veil(wallpaperColor, style.dark, style.opacity)),
+            )
+        }
+        else -> setInt(android.R.id.background, "setBackgroundResource", backgroundOf(style))
     }
 }
 
@@ -338,6 +361,10 @@ private fun backgroundOf(style: WidgetBackground): Int = when {
     style.opacity < 100 -> R.drawable.widget_background_light_50
     else -> R.drawable.widget_background_light_100
 }
+
+// Text on the cover and on the dark veil, as in widget_player
+private const val DARK_SECONDARY = 0xE6FFFFFF.toInt()
+private const val DARK_TERTIARY = 0x99FFFFFF.toInt()
 
 // Text on the white veil, as the light widgets of Samsung
 private const val LIGHT_TEXT = 0xFF000000.toInt()
@@ -367,6 +394,8 @@ private class WidgetData(
     val cover: Bitmap?,
     val device: String,
     val output: Playback.OutputSwitcher,
+    /** Main color of the wallpaper, for the veil of the Samsung style */
+    val wallpaperColor: Int?,
 ) {
     companion object {
         suspend fun load(context: Context): WidgetData {
@@ -380,7 +409,18 @@ private class WidgetData(
                 cover = if (state.background.cover) ImageCache.load(state.nowPlaying?.artPath) else null,
                 device = Playback.outputName(context, controller),
                 output = Playback.outputSwitcher(context),
+                wallpaperColor = if (state.background.cover) null else wallpaperColor(context),
             )
         }
+
+        // The colors of the wallpaper can be read from Android 8.1
+        private fun wallpaperColor(context: Context): Int? = runCatching {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O_MR1) return null
+            WallpaperManager.getInstance(context)
+                .getWallpaperColors(WallpaperManager.FLAG_SYSTEM)
+                ?.primaryColor
+                ?.toArgb()
+        }.getOrNull()
     }
 }
+
