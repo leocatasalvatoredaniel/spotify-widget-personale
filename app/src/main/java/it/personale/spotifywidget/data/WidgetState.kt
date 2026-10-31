@@ -81,8 +81,6 @@ data class WidgetBackground(
 @Serializable
 data class WidgetState(
     val nowPlaying: NowPlaying? = null,
-    /** Notification icon of Spotify, a drawable of the Spotify app */
-    val appIcon: Int? = null,
     val background: WidgetBackground = WidgetBackground(),
 )
 

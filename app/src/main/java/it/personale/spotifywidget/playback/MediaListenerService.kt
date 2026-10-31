@@ -1,12 +1,10 @@
 package it.personale.spotifywidget.playback
 
-import android.app.Notification
 import android.app.WallpaperManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.graphics.drawable.Icon
 import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
@@ -20,7 +18,6 @@ import android.os.Looper
 import android.os.PowerManager
 import android.os.SystemClock
 import android.service.notification.NotificationListenerService
-import android.service.notification.StatusBarNotification
 import it.personale.spotifywidget.app
 import it.personale.spotifywidget.widget.WidgetRenderer
 import kotlinx.coroutines.launch
@@ -28,8 +25,8 @@ import kotlinx.coroutines.launch
 /**
  * Kept running by Android while the access is granted: it follows the media
  * session of Spotify and updates the widget when the track, the playback
- * state or the audio output change. Of the notifications it only reads the
- * icon of Spotify, shown next to the title as in the system player.
+ * state or the audio output change. The notifications themselves are not
+ * read.
  */
 class MediaListenerService : NotificationListenerService() {
     private val handler = Handler(Looper.getMainLooper())
@@ -80,9 +77,6 @@ class MediaListenerService : NotificationListenerService() {
             receiverRegistered = true
         }
         getSystemService(AudioManager::class.java).registerAudioDeviceCallback(devicesCallback, handler)
-        runCatching { activeNotifications }.getOrNull()
-            ?.filter { it.packageName == Playback.SPOTIFY_PACKAGE }
-            ?.forEach(::saveSpotifyIcon)
         // The veil of the Samsung style takes the colors of the wallpaper (from Android 8.1)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             WallpaperManager.getInstance(this).addOnColorsChangedListener(wallpaperListener, handler)
@@ -117,10 +111,6 @@ class MediaListenerService : NotificationListenerService() {
         app.ticker.stop()
     }
 
-    override fun onNotificationPosted(notification: StatusBarNotification) {
-        if (notification.packageName == Playback.SPOTIFY_PACKAGE) saveSpotifyIcon(notification)
-    }
-
     private fun attach(controllers: List<MediaController>?, force: Boolean = false) {
         val spotify = controllers?.firstOrNull { it.packageName == Playback.SPOTIFY_PACKAGE }
         if (!force && spotify?.sessionToken == controller?.sessionToken) return
@@ -145,21 +135,6 @@ class MediaListenerService : NotificationListenerService() {
             SystemClock.elapsedRealtime() - requested > PLAY_REQUEST_MS -> app.playRequestedAt = 0
             controller.playbackState?.state == PlaybackState.STATE_PLAYING -> app.playRequestedAt = 0
             else -> controller.transportControls.play()
-        }
-    }
-
-    private fun saveSpotifyIcon(notification: StatusBarNotification) {
-        // The drawable of an icon can be read from Android 9
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return
-        // Only the notification of the player: the others (e.g. downloads) have other icons
-        if (!notification.notification.extras.containsKey(Notification.EXTRA_MEDIA_SESSION)) return
-        val icon = notification.notification.smallIcon ?: return
-        if (icon.type != Icon.TYPE_RESOURCE || icon.resPackage != Playback.SPOTIFY_PACKAGE) return
-        val res = icon.resId
-        app.scope.launch {
-            if (app.store.read().appIcon == res) return@launch
-            app.store.update { it.copy(appIcon = res) }
-            WidgetRenderer.renderAll(app)
         }
     }
 

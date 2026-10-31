@@ -12,7 +12,7 @@ Non è un'app di Spotify e non va distribuita.
 
 ## Come funziona
 
-Il widget usa solo la **sessione multimediale** di Spotify sul telefono, la stessa che usa il player del sistema. Per leggerla serve l'**Accesso alle notifiche**. Delle notifiche l'app legge solo l'icona di Spotify, mostrata accanto al titolo come nel player del sistema; il contenuto delle notifiche non viene letto né salvato.
+Il widget usa solo la **sessione multimediale** di Spotify sul telefono, la stessa che usa il player del sistema. Per leggerla serve l'**Accesso alle notifiche**; le notifiche però non vengono lette né salvate.
 
 Quindi:
 

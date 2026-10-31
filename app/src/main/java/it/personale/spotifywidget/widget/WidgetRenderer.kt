@@ -136,11 +136,6 @@ object WidgetRenderer {
             R.id.title,
             if (nowPlaying.artist.isBlank()) nowPlaying.title else "${nowPlaying.title} • ${nowPlaying.artist}",
         )
-        val appIcon = data.state.appIcon
-        if (appIcon != null) {
-            views.setImageViewIcon(R.id.app_icon, Icon.createWithResource(Playback.SPOTIFY_PACKAGE, appIcon))
-        }
-        views.setViewVisibility(R.id.app_icon, if (appIcon != null) View.VISIBLE else View.GONE)
 
         val position = nowPlaying.positionAt(System.currentTimeMillis())
         views.setProgress(progressWithThumb(position, nowPlaying.durationMs, metrics.progressWidthDp))
@@ -297,9 +292,6 @@ internal fun RemoteViews.applyMetrics(metrics: PlayerMetrics, density: Float) {
     setViewLayoutWidth(R.id.output_icon, 24f * scale, dip)
     setViewLayoutHeight(R.id.output_icon, 24f * scale, dip)
     setViewLayoutMargin(R.id.title_row, RemoteViews.MARGIN_TOP, 4f * scale, dip)
-    setViewLayoutWidth(R.id.app_icon, 16f * scale, dip)
-    setViewLayoutHeight(R.id.app_icon, 16f * scale, dip)
-    setViewLayoutMargin(R.id.app_icon, RemoteViews.MARGIN_END, 6f * scale, dip)
     setViewLayoutHeight(R.id.controls, 48f * scale, dip)
     setViewLayoutMargin(R.id.controls, RemoteViews.MARGIN_START, 12f * scale, dip)
     setViewLayoutMargin(R.id.controls, RemoteViews.MARGIN_END, 16f * scale, dip)
@@ -323,7 +315,7 @@ internal fun RemoteViews.applyStyle(style: WidgetBackground, wallpaperColor: Int
     setTextColor(R.id.elapsed, if (light) LIGHT_TERTIARY else DARK_TERTIARY)
     setTextColor(R.id.duration, if (light) LIGHT_TERTIARY else DARK_TERTIARY)
     val icons = if (light) LIGHT_TEXT else WidgetColors.WHITE
-    listOf(R.id.output_icon, R.id.app_icon, R.id.action_start, R.id.previous, R.id.play_pause, R.id.next, R.id.action_end)
+    listOf(R.id.output_icon, R.id.action_start, R.id.previous, R.id.play_pause, R.id.next, R.id.action_end)
         .forEach { setInt(it, "setColorFilter", icons) }
     val round = if (light) R.drawable.widget_button_round_light else R.drawable.widget_button_round
     listOf(R.id.previous, R.id.play_pause, R.id.next).forEach { setInt(it, "setBackgroundResource", round) }

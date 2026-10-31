@@ -21,7 +21,7 @@
     <!-- Settings -->
     <string name="settings_title">Widget Musica</string>
     <string name="access_title">Accesso alle notifiche</string>
-    <string name="access_explanation">Serve per vedere in tempo reale cosa suona Spotify e per i comandi, come fa il player del sistema. Delle notifiche l\'app legge solo l\'icona di Spotify: non legge né salva il loro contenuto.</string>
+    <string name="access_explanation">Serve per vedere in tempo reale cosa suona Spotify e per i comandi, come fa il player del sistema. L\'app non legge né salva le notifiche.</string>
     <string name="widget_title">Widget</string>
     <string name="widget_add">Aggiungi alla schermata Home</string>
     <string name="widget_add_summary">Misura consigliata 4×2</string>
