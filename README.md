@@ -74,6 +74,8 @@ In alternativa, nell'app (**Sfondo del widget**) puoi spegnere **Copertina come 
 
 Le tonalità sono misurate sulle impostazioni dei widget Samsung. La sfocatura di ciò che sta dietro non è possibile, perché è riservata ai widget di sistema: al suo posto la velatura prende il colore principale dello sfondo del telefono (da Android 12). Per somigliare agli altri widget della Home usa la loro stessa opacità.
 
+Il testo usa il font di sistema Samsung (One UI Sans), come il player della tendina. I widget prendono il font di Android a meno che non si indichi una famiglia di sistema per nome: l'app la cerca negli elenchi dei font del telefono. In **Widget**, nell'app, è scritto quale ha trovato; se non la trova, il testo resta nel font di Android.
+
 Il colore della barra segue la stessa regola di One UI: la tinta della copertina, satura, oppure blu notte per le copertine in bianco e nero.
 
 ## Limiti noti

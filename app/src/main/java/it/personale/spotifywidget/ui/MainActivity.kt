@@ -128,6 +128,11 @@ private fun SettingsScreen(resumes: Int) {
                 },
             ),
         )
+        val font = remember { context.app.systemFont }
+        OneUiFooter(
+            if (font != null) stringResource(R.string.font_samsung, font.family, font.file)
+            else stringResource(R.string.font_android),
+        )
         if (samsungActivities != null && output.kind != Playback.OutputSwitcher.Kind.SAMSUNG) {
             OneUiFooter(
                 stringResource(R.string.output_samsung_activities, samsungActivities.joinToString().ifEmpty { "–" }),

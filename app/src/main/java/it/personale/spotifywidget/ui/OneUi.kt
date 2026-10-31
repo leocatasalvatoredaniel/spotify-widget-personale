@@ -1,5 +1,10 @@
 package it.personale.spotifywidget.ui
 
+import android.graphics.Typeface
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
+import it.personale.spotifywidget.app
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -87,6 +92,9 @@ private val Dark = OneUiColors(
 
 val LocalOneUi = staticCompositionLocalOf { Light }
 
+/** The system font of Samsung where found, as the Samsung settings use */
+val LocalOneUiFont = staticCompositionLocalOf<FontFamily> { FontFamily.Default }
+
 private val CardShape = RoundedCornerShape(24.dp)
 
 @Composable
@@ -99,8 +107,12 @@ fun OneUiTheme(content: @Composable () -> Unit) {
     } else {
         lightColorScheme(primary = colors.accent, background = colors.background, surface = colors.card, onSurface = colors.text)
     }
+    val context = LocalContext.current
+    val font = remember {
+        context.app.systemFont?.let { FontFamily(Typeface.create(it.family, Typeface.NORMAL)) } ?: FontFamily.Default
+    }
     MaterialTheme(colorScheme = scheme) {
-        CompositionLocalProvider(LocalOneUi provides colors, content = content)
+        CompositionLocalProvider(LocalOneUi provides colors, LocalOneUiFont provides font, content = content)
     }
 }
 
@@ -109,7 +121,7 @@ fun OneUiTheme(content: @Composable () -> Unit) {
 fun OneUiTitle(text: String) {
     Text(
         text = text,
-        style = TextStyle(fontSize = 21.sp, fontWeight = FontWeight.Bold, color = LocalOneUi.current.text),
+        style = TextStyle(fontFamily = LocalOneUiFont.current, fontSize = 21.sp, fontWeight = FontWeight.Bold, color = LocalOneUi.current.text),
         modifier = Modifier.padding(start = 28.dp, end = 28.dp, top = 18.dp, bottom = 22.dp),
     )
 }
@@ -119,7 +131,7 @@ fun OneUiTitle(text: String) {
 fun OneUiSectionHeader(text: String) {
     Text(
         text = text,
-        style = TextStyle(fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = LocalOneUi.current.secondary),
+        style = TextStyle(fontFamily = LocalOneUiFont.current, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, color = LocalOneUi.current.secondary),
         modifier = Modifier.padding(start = 28.dp, end = 28.dp, top = 16.dp, bottom = 8.dp),
     )
 }
@@ -129,7 +141,7 @@ fun OneUiSectionHeader(text: String) {
 fun OneUiFooter(text: String) {
     Text(
         text = text,
-        style = TextStyle(fontSize = 13.sp, lineHeight = 18.sp, color = LocalOneUi.current.secondary),
+        style = TextStyle(fontFamily = LocalOneUiFont.current, fontSize = 13.sp, lineHeight = 18.sp, color = LocalOneUi.current.secondary),
         modifier = Modifier.padding(start = 28.dp, end = 28.dp, top = 10.dp),
     )
 }
@@ -186,11 +198,11 @@ fun OneUiRow(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text(title, style = TextStyle(fontSize = 18.sp, color = colors.text))
+            Text(title, style = TextStyle(fontFamily = LocalOneUiFont.current, fontSize = 18.sp, color = colors.text))
             if (summary != null) {
                 Text(
                     summary,
-                    style = TextStyle(
+                    style = TextStyle(fontFamily = LocalOneUiFont.current, 
                         fontSize = 13.sp,
                         lineHeight = 18.sp,
                         color = if (summaryIsValue) colors.accent else colors.secondary,
@@ -296,7 +308,7 @@ fun OneUiTransparencyIcon() {
 fun OneUiSliderRow(title: String, stops: Int, value: Int, onChange: (Int) -> Unit) {
     val colors = LocalOneUi.current
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 13.dp)) {
-        Text(title, style = TextStyle(fontSize = 18.sp, color = colors.text))
+        Text(title, style = TextStyle(fontFamily = LocalOneUiFont.current, fontSize = 18.sp, color = colors.text))
         Row(
             modifier = Modifier.fillMaxWidth().padding(top = 14.dp),
             verticalAlignment = Alignment.CenterVertically,

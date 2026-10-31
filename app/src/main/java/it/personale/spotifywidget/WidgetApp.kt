@@ -6,6 +6,7 @@ import it.personale.spotifywidget.data.ImageCache
 import it.personale.spotifywidget.data.WidgetStore
 import it.personale.spotifywidget.playback.NowPlayingUpdater
 import it.personale.spotifywidget.playback.ProgressTicker
+import it.personale.spotifywidget.widget.SystemFont
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -23,6 +24,9 @@ class WidgetApp : Application() {
     val images: ImageCache by lazy { ImageCache(this) }
     val nowPlaying: NowPlayingUpdater by lazy { NowPlayingUpdater(this) }
     val ticker: ProgressTicker by lazy { ProgressTicker(this) }
+
+    /** System font of Samsung, for the widget and the settings; null where missing */
+    val systemFont: SystemFont? by lazy { SystemFont.find() }
 
     /** When play was pressed with Spotify closed (elapsed realtime), 0 if not */
     @Volatile

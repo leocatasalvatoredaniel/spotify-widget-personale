@@ -11,6 +11,9 @@ import android.graphics.Bitmap
 import android.graphics.drawable.Icon
 import android.os.Build
 import android.os.Bundle
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.TypefaceSpan
 import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
@@ -67,7 +70,7 @@ object WidgetRenderer {
             val metrics = metricsOf(manager.getAppWidgetOptions(id))
             val views = RemoteViews(context.packageName, R.layout.widget_player).apply {
                 setProgress(progressWithThumb(position, duration, metrics.progressWidthDp))
-                setTextViewText(R.id.elapsed, formatTime(position))
+                setTextViewText(R.id.elapsed, inFont(formatTime(position), context.app.systemFont?.family))
             }
             manager.partiallyUpdateAppWidget(id, views)
         }
@@ -128,13 +131,17 @@ object WidgetRenderer {
         else views.setImageViewResource(R.id.art, 0)
         views.setOnClickPendingIntent(R.id.content, openSpotify(context))
 
-        views.setTextViewText(R.id.device, data.device)
+        val font = context.app.systemFont
+        views.setTextViewText(R.id.device, inFont(data.device, font?.medium ?: font?.family))
         views.setContentDescription(R.id.output, context.getString(R.string.output_description, data.device))
         views.setOnClickPendingIntent(R.id.output, outputSwitcher(context, data.output))
 
         views.setTextViewText(
             R.id.title,
-            if (nowPlaying.artist.isBlank()) nowPlaying.title else "${nowPlaying.title} • ${nowPlaying.artist}",
+            inFont(
+                if (nowPlaying.artist.isBlank()) nowPlaying.title else "${nowPlaying.title} • ${nowPlaying.artist}",
+                font?.medium ?: font?.family,
+            ),
         )
 
         val position = nowPlaying.positionAt(System.currentTimeMillis())
@@ -150,8 +157,8 @@ object WidgetRenderer {
             R.id.times,
             if (!metrics.showTimes || nowPlaying.durationMs <= 0) View.GONE else View.VISIBLE,
         )
-        views.setTextViewText(R.id.elapsed, formatTime(position))
-        views.setTextViewText(R.id.duration, formatTime(nowPlaying.durationMs))
+        views.setTextViewText(R.id.elapsed, inFont(formatTime(position), font?.family))
+        views.setTextViewText(R.id.duration, inFont(formatTime(nowPlaying.durationMs), font?.family))
 
         val playing = nowPlaying.isPlaying
         views.setImageViewResource(R.id.play_pause, if (playing) R.drawable.ic_pause else R.drawable.ic_play)
@@ -194,7 +201,7 @@ object WidgetRenderer {
 
     private fun message(context: Context, text: Int, click: PendingIntent, data: WidgetData): RemoteViews =
         RemoteViews(context.packageName, R.layout.widget_message).apply {
-            setTextViewText(R.id.message, context.getString(text))
+            setTextViewText(R.id.message, inFont(context.getString(text), context.app.systemFont?.family))
             setOnClickPendingIntent(android.R.id.background, click)
             val style = data.state.background
             setBackground(style, data.wallpaperColor)
@@ -300,6 +307,14 @@ internal fun RemoteViews.applyMetrics(metrics: PlayerMetrics, density: Float) {
         setViewLayoutHeight(id, 48f * scale, dip)
     }
 }
+
+/**
+ * [text] in a system font family, which reaches the launcher as a span: the
+ * only way to give a widget the font of Samsung (see [SystemFont])
+ */
+private fun inFont(text: String, family: String?): CharSequence =
+    if (family == null) text
+    else SpannableString(text).apply { setSpan(TypefaceSpan(family), 0, length, Spanned.SPAN_INCLUSIVE_EXCLUSIVE) }
 
 /**
  * Colors of the widget: on the cover or on the dark veil white text and
