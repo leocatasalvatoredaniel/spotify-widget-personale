@@ -7,6 +7,8 @@ import android.os.SystemClock
 import android.widget.Toast
 import androidx.palette.graphics.Palette
 import it.personale.spotifywidget.WidgetApp
+import it.personale.spotifywidget.data.ACCENT_RULE
+import it.personale.spotifywidget.data.ImageCache
 import it.personale.spotifywidget.data.NowPlaying
 import it.personale.spotifywidget.data.SessionAction
 import it.personale.spotifywidget.widget.WidgetColors
@@ -54,7 +56,13 @@ class NowPlayingUpdater(private val app: WidgetApp) {
         val keepArt = previous?.key == key && previous.artPath?.let { File(it).exists() } == true
         val art = if (keepArt) null else coverOf(metadata)
         val artPath = if (keepArt) previous?.artPath else art?.let { app.images.saveNowPlaying(it, key) }
-        val accent = if (keepArt) previous?.accent else art?.let { accentOf(it) }
+        // Colors from an older rule are computed again from the saved cover
+        val keepAccent = keepArt && previous?.accentRule == ACCENT_RULE
+        val accent = when {
+            keepAccent -> previous?.accent
+            art != null -> accentOf(art)
+            else -> ImageCache.load(artPath)?.let { accentOf(it) }
+        }
 
         val nowPlaying = NowPlaying(
             title = title,
@@ -62,6 +70,7 @@ class NowPlayingUpdater(private val app: WidgetApp) {
             album = album,
             artPath = artPath,
             accent = accent,
+            accentRule = ACCENT_RULE,
             isPlaying = Playback.isPlaying(state),
             durationMs = metadata.getLong(MediaMetadata.METADATA_KEY_DURATION).coerceAtLeast(0),
             positionMs = state?.let { Playback.positionNow(it) }?.coerceAtLeast(0) ?: 0,

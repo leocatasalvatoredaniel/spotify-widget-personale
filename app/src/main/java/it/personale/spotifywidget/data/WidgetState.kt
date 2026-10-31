@@ -31,6 +31,8 @@ data class NowPlaying(
     val artPath: String? = null,
     /** Color of the progress bar, from the cover */
     val accent: Int? = null,
+    /** Rule that computed [accent]: older colors are computed again */
+    val accentRule: Int = 0,
     val isPlaying: Boolean = false,
     val durationMs: Long = 0,
     /** Position read at [positionAt] (System.currentTimeMillis) */
@@ -76,6 +78,9 @@ fun formatTime(millis: Long): String {
     return if (hours > 0) "%d:%02d:%02d".format(hours, minutes, rest)
     else "%02d:%02d".format(minutes, rest)
 }
+
+/** Current rule of the color of the progress bar, as One UI picks it */
+const val ACCENT_RULE = 2
 
 const val PROGRESS_MAX = 1000
 

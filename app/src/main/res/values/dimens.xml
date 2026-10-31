@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <dimen name="widget_radius">24dp</dimen>
+    <!-- Extra margin above and below the card, as the One UI widgets (see widget_player) -->
+    <dimen name="widget_margin_vertical">10.5dp</dimen>
 
     <!-- Progress of the widget, measured on the media player of One UI -->
     <dimen name="progress_height">16dp</dimen>

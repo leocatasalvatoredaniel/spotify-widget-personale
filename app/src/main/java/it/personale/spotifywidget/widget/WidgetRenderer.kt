@@ -71,11 +71,16 @@ object WidgetRenderer {
         }
     }
 
-    /** Sizes in portrait, where the home screen of a phone is used */
-    private fun metricsOf(options: Bundle) = PlayerMetrics.forSize(
-        options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH),
-        options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT),
-    )
+    /** Sizes of the card in portrait, where the home screen of a phone is used */
+    private fun metricsOf(options: Bundle) = PlayerMetrics.forSize(cardWidthDp(options), cardHeightDp(options))
+
+    private fun cardWidthDp(options: Bundle) = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
+
+    /** The card leaves the margin of the One UI widgets above and below (widget_margin_vertical) */
+    private fun cardHeightDp(options: Bundle): Int {
+        val height = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT)
+        return if (height > 0) (height - 2 * CARD_MARGIN_DP).roundToInt().coerceAtLeast(1) else 0
+    }
 
     /**
      * Moves the three layers of the progress together: the played part with
@@ -101,8 +106,8 @@ object WidgetRenderer {
     private fun player(context: Context, data: WidgetData, nowPlaying: NowPlaying, options: Bundle): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_player)
 
-        val widthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
-        val heightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT)
+        val widthDp = cardWidthDp(options)
+        val heightDp = cardHeightDp(options)
         val density = context.resources.displayMetrics.density
         val metrics = metricsOf(options)
         views.applyMetrics(metrics, density)
@@ -239,6 +244,9 @@ object WidgetRenderer {
     // Size of the player when the launcher does not report it
     private const val DEFAULT_WIDTH_DP = 360
     private const val DEFAULT_HEIGHT_DP = 160
+
+    // Margin above and below the card (dp), as widget_margin_vertical
+    private const val CARD_MARGIN_DP = 10.5f
 
     private const val REQUEST_OPEN = 1
     private const val REQUEST_APP = 2
