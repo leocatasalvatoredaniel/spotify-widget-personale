@@ -104,11 +104,14 @@ class NowPlayingUpdater(private val app: WidgetApp) {
             ?: metadata.getBitmap(MediaMetadata.METADATA_KEY_ART)
             ?: metadata.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON)
 
-    /** A lively color of the cover for the progress bar, as the system player */
+    /** Color of the progress bar from the cover, as the system player picks it */
     private fun accentOf(bitmap: Bitmap): Int? = runCatching {
         val palette = Palette.from(bitmap).maximumColorCount(16).generate()
-        val swatch = palette.vibrantSwatch ?: palette.lightVibrantSwatch ?: palette.dominantSwatch
-        swatch?.rgb?.let(WidgetColors::accent)
+        val colorful = palette.vibrantSwatch
+            ?: palette.darkVibrantSwatch
+            ?: palette.lightVibrantSwatch
+            ?: palette.mutedSwatch
+        WidgetColors.progressColor(colorful?.rgb)
     }.getOrNull()
 
     private companion object {

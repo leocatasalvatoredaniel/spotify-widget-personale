@@ -67,9 +67,11 @@ Il widget si ridimensiona liberamente: pulsanti, testo e margini crescono e si r
 
 Lo sfondo è la copertina sfumata come nel player di One UI: più chiara al centro in alto, più scura verso i lati e il basso.
 
+Il colore della barra segue la stessa regola di One UI: la tinta della copertina, satura, oppure blu notte per le copertine in bianco e nero.
+
 ## Limiti noti
 
-- **La barra non si trascina** e non ha il pallino: i widget di Android non supportano i cursori. Si aggiorna ogni secondo, solo con lo schermo acceso e la musica in riproduzione.
+- **La barra non si trascina** e non ha l'onda animata: i widget di Android non supportano i cursori né le animazioni. Il pallino c'è e avanza con la barra, che si aggiorna ogni secondo, solo con lo schermo acceso e la musica in riproduzione.
 - **Cambio uscita**: su One UI 9 il widget apre il pannello di uscita di Android, non quello Samsung. Il selettore Samsung della tendina non si può aprire dalle altre app. Il pannello multimediale di *Media and devices* lo era sulle versioni precedenti di One UI: se è presente, il widget usa quello. Se manca anche il pannello di Android, apre Spotify (*Dispositivi disponibili*). Nell'app, sezione **Widget**, c'è scritto quale pannello apre il pulsante.
 - **Shuffle e +** dipendono da Spotify: se Spotify non risponde ai pulsanti premuti da un'altra app, non funzionano dal widget (play, pausa e brani funzionano comunque).
 - **Spotify chiuso**: resta l'ultimo brano, in pausa. Play apre Spotify e avvia la musica appena è pronto.

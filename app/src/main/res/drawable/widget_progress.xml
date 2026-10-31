@@ -1,21 +1,62 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Progress of the track: a light track and a rounded bar tinted with the
-     color of the cover (from Android 12) -->
+<!-- Progress as in the media player of One UI: a light track, the played part
+     in the color of the cover (tinted from Android 12) and a round thumb with
+     a white ring. The thumb is the end of the scaled layers: the renderer
+     shifts the progress by its width so that it never leaves the track. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@android:id/background">
+    <item
+        android:id="@android:id/background"
+        android:gravity="center_vertical|fill_horizontal"
+        android:height="4dp">
         <shape>
             <corners android:radius="2dp" />
             <solid android:color="#73FFFFFF" />
         </shape>
     </item>
+
+    <!-- White ring of the thumb, moved with the progress (secondary progress) -->
+    <item android:id="@android:id/secondaryProgress">
+        <scale
+            android:scaleGravity="start|center_vertical"
+            android:scaleWidth="100%">
+            <layer-list>
+                <item
+                    android:gravity="end|center_vertical"
+                    android:width="16dp"
+                    android:height="16dp">
+                    <shape android:shape="oval">
+                        <solid android:color="@android:color/white" />
+                    </shape>
+                </item>
+            </layer-list>
+        </scale>
+    </item>
+
+    <!-- Played part and center of the thumb, in the color of the cover -->
     <item android:id="@android:id/progress">
         <scale
-            android:scaleWidth="100%"
-            android:scaleGravity="start|center_vertical">
-            <shape>
-                <corners android:radius="2dp" />
-                <solid android:color="@android:color/white" />
-            </shape>
+            android:scaleGravity="start|center_vertical"
+            android:scaleWidth="100%">
+            <layer-list>
+                <item
+                    android:gravity="center_vertical|fill_horizontal"
+                    android:height="4dp"
+                    android:right="8dp">
+                    <shape>
+                        <corners android:radius="2dp" />
+                        <solid android:color="@android:color/white" />
+                    </shape>
+                </item>
+                <item
+                    android:gravity="end|center_vertical"
+                    android:width="10dp"
+                    android:height="10dp"
+                    android:right="3dp">
+                    <shape android:shape="oval">
+                        <solid android:color="@android:color/white" />
+                    </shape>
+                </item>
+            </layer-list>
         </scale>
     </item>
 </layer-list>

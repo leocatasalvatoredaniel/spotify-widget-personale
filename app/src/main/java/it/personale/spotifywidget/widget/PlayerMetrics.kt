@@ -7,6 +7,8 @@ package it.personale.spotifywidget.widget
  */
 data class PlayerMetrics(
     val scale: Float,
+    /** Width of the progress bar, null when the size of the widget is unknown */
+    val progressWidthDp: Float?,
     /** Row with the output device */
     val showOutput: Boolean,
     /** Name of the device next to the output button */
@@ -21,17 +23,28 @@ data class PlayerMetrics(
         private const val PAD_BOTTOM = 8
         private const val OUTPUT_ROW = 24 + 4
         private const val TITLE_ROW = 22
-        private const val MIN_GAP = 12
-        private const val PROGRESS = 4
-        private const val TIMES_ROW = 6 + 16
+        private const val MIN_GAP = 6
+        // The track is 4 dp, the thumb on it 16 dp
+        private const val PROGRESS = 16
+        private const val TIMES_ROW = 16
         private const val CONTROLS = 48
         private const val SIDE_PADDING = 24 + 20 + 12 + 16
         private const val BUTTON = 48
 
+        // Margins around the progress bar at scale 1: padding of the player and end margin
+        private const val PROGRESS_MARGINS = 24 + 20 + 4
+
         const val MIN_SCALE = 0.5f
         const val MAX_SCALE = 1.6f
 
-        val DEFAULT = PlayerMetrics(1f, showOutput = true, showDeviceName = true, showTimes = true, showActions = true)
+        val DEFAULT = PlayerMetrics(
+            scale = 1f,
+            progressWidthDp = null,
+            showOutput = true,
+            showDeviceName = true,
+            showTimes = true,
+            showActions = true,
+        )
 
         fun forSize(widthDp: Int, heightDp: Int): PlayerMetrics {
             if (widthDp <= 0 || heightDp <= 0) return DEFAULT
@@ -52,8 +65,10 @@ data class PlayerMetrics(
             } ?: layouts.last()
 
             val scale = minOf(widthScale, heightDp.toFloat() / height(showOutput, showTimes))
+                .coerceIn(MIN_SCALE, MAX_SCALE)
             return PlayerMetrics(
-                scale = scale.coerceIn(MIN_SCALE, MAX_SCALE),
+                scale = scale,
+                progressWidthDp = widthDp - PROGRESS_MARGINS * scale,
                 showOutput = showOutput,
                 showDeviceName = showActions,
                 showTimes = showTimes,

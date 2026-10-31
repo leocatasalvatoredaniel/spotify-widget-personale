@@ -27,7 +27,7 @@ class PlayerMetricsTest {
         assertFalse(metrics.showOutput)
         assertFalse(metrics.showTimes)
         assertTrue(metrics.showActions)
-        assertEquals(1.02f, metrics.scale, 0.02f)
+        assertEquals(0.96f, metrics.scale, 0.02f)
     }
 
     @Test

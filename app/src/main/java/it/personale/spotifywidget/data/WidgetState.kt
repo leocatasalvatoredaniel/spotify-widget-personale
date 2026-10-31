@@ -83,3 +83,20 @@ const val PROGRESS_MAX = 1000
 fun progressOf(position: Long, duration: Long): Int =
     if (duration <= 0) 0
     else (position.coerceIn(0, duration) * PROGRESS_MAX / duration).toInt()
+
+/** Width (dp) of the thumb at the end of the progress */
+const val THUMB_DP = 16f
+
+/**
+ * Progress for a bar of [barWidthDp] whose thumb ends the played part: it
+ * starts one thumb in, so that the thumb never leaves the track
+ */
+fun progressWithThumb(position: Long, duration: Long, barWidthDp: Float?): Int {
+    if (duration <= 0) return 0
+    val fraction = position.coerceIn(0, duration).toFloat() / duration
+    val thumb = if (barWidthDp != null && barWidthDp > THUMB_DP) THUMB_DP / barWidthDp else DEFAULT_THUMB_FRACTION
+    return ((thumb + fraction * (1 - thumb)) * PROGRESS_MAX).toInt()
+}
+
+// The thumb on the bar of a 4×2 widget
+private const val DEFAULT_THUMB_FRACTION = 0.05f

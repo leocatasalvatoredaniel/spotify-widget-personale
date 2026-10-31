@@ -20,7 +20,7 @@ import it.personale.spotifywidget.data.NowPlaying
 import it.personale.spotifywidget.data.PROGRESS_MAX
 import it.personale.spotifywidget.data.WidgetState
 import it.personale.spotifywidget.data.formatTime
-import it.personale.spotifywidget.data.progressOf
+import it.personale.spotifywidget.data.progressWithThumb
 import it.personale.spotifywidget.playback.Playback
 import it.personale.spotifywidget.ui.LaunchSpotifyActivity
 import it.personale.spotifywidget.ui.MainActivity
@@ -60,13 +60,27 @@ object WidgetRenderer {
     fun renderProgress(context: Context, position: Long, duration: Long) {
         if (!drawn) return
         val manager = AppWidgetManager.getInstance(context)
-        val ids = manager.getAppWidgetIds(component(context))
-        if (ids.isEmpty()) return
-        val views = RemoteViews(context.packageName, R.layout.widget_player).apply {
-            setProgressBar(R.id.progress, PROGRESS_MAX, progressOf(position, duration), false)
-            setTextViewText(R.id.elapsed, formatTime(position))
+        // Each widget has its own width, so its own position of the thumb
+        manager.getAppWidgetIds(component(context)).forEach { id ->
+            val metrics = metricsOf(manager.getAppWidgetOptions(id))
+            val views = RemoteViews(context.packageName, R.layout.widget_player).apply {
+                setProgress(progressWithThumb(position, duration, metrics.progressWidthDp))
+                setTextViewText(R.id.elapsed, formatTime(position))
+            }
+            manager.partiallyUpdateAppWidget(id, views)
         }
-        manager.partiallyUpdateAppWidget(ids, views)
+    }
+
+    /** Sizes in portrait, where the home screen of a phone is used */
+    private fun metricsOf(options: Bundle) = PlayerMetrics.forSize(
+        options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH),
+        options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT),
+    )
+
+    /** The played part and the thumb, whose white ring is the secondary progress */
+    private fun RemoteViews.setProgress(progress: Int) {
+        setProgressBar(R.id.progress, PROGRESS_MAX, progress, false)
+        setInt(R.id.progress, "setSecondaryProgress", progress)
     }
 
     private fun build(context: Context, data: WidgetData, options: Bundle): RemoteViews {
@@ -81,11 +95,10 @@ object WidgetRenderer {
     private fun player(context: Context, data: WidgetData, nowPlaying: NowPlaying, options: Bundle): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_player)
 
-        // Sizes in portrait, where the home screen of a phone is used
         val widthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
         val heightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT)
         val density = context.resources.displayMetrics.density
-        val metrics = PlayerMetrics.forSize(widthDp, heightDp)
+        val metrics = metricsOf(options)
         views.applyMetrics(metrics, density)
 
         val background = data.cover?.let {
@@ -114,12 +127,12 @@ object WidgetRenderer {
         views.setViewVisibility(R.id.app_icon, if (appIcon != null) View.VISIBLE else View.GONE)
 
         val position = nowPlaying.positionAt(System.currentTimeMillis())
-        views.setProgressBar(R.id.progress, PROGRESS_MAX, progressOf(position, nowPlaying.durationMs), false)
+        views.setProgress(progressWithThumb(position, nowPlaying.durationMs, metrics.progressWidthDp))
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             views.setColorStateList(
                 R.id.progress,
                 "setProgressTintList",
-                ColorStateList.valueOf(nowPlaying.accent ?: WidgetColors.WHITE),
+                ColorStateList.valueOf(nowPlaying.accent ?: WidgetColors.NEUTRAL),
             )
         }
         views.setViewVisibility(
@@ -264,8 +277,6 @@ internal fun RemoteViews.applyMetrics(metrics: PlayerMetrics, density: Float) {
     setViewLayoutWidth(R.id.app_icon, 16f * scale, dip)
     setViewLayoutHeight(R.id.app_icon, 16f * scale, dip)
     setViewLayoutMargin(R.id.app_icon, RemoteViews.MARGIN_END, 6f * scale, dip)
-    setViewLayoutHeight(R.id.progress, 4f * scale, dip)
-    setViewLayoutMargin(R.id.times, RemoteViews.MARGIN_TOP, 6f * scale, dip)
     setViewLayoutHeight(R.id.controls, 48f * scale, dip)
     setViewLayoutMargin(R.id.controls, RemoteViews.MARGIN_START, 12f * scale, dip)
     setViewLayoutMargin(R.id.controls, RemoteViews.MARGIN_END, 16f * scale, dip)

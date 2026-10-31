@@ -4,6 +4,7 @@ import it.personale.spotifywidget.data.NowPlaying
 import it.personale.spotifywidget.data.SessionAction
 import it.personale.spotifywidget.data.formatTime
 import it.personale.spotifywidget.data.progressOf
+import it.personale.spotifywidget.data.progressWithThumb
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -63,5 +64,14 @@ class NowPlayingTest {
         assertEquals(259, progressOf(49_000, 189_000))
         assertEquals(1000, progressOf(200_000, 189_000))
         assertEquals(0, progressOf(5_000, 0))
+    }
+
+    @Test
+    fun thumbStaysOnTheTrack() {
+        // 320 dp bar, 16 dp thumb: the thumb starts one thumb in and ends at the end
+        assertEquals(50, progressWithThumb(0, 189_000, 320f))
+        assertEquals(1000, progressWithThumb(189_000, 189_000, 320f))
+        assertEquals(525, progressWithThumb(94_500, 189_000, 320f))
+        assertEquals(0, progressWithThumb(5_000, 0, 320f))
     }
 }
