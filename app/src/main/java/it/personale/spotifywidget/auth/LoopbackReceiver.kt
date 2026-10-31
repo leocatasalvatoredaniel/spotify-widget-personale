@@ -7,6 +7,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.IOException
 import java.net.InetAddress
+import java.net.InetSocketAddress
 import java.net.ServerSocket
 import java.net.Socket
 
@@ -25,7 +26,10 @@ class LoopbackReceiver(private val scope: CoroutineScope) {
      */
     fun start(onCallback: suspend (Uri) -> String): String {
         stop()
-        val socket = ServerSocket(0, 1, InetAddress.getByName(HOST))
+        val socket = ServerSocket().apply {
+            reuseAddress = true
+            bind(InetSocketAddress(InetAddress.getByName(HOST), PORT), 1)
+        }
         socket.soTimeout = TIMEOUT_MS
         server = socket
         scope.launch(Dispatchers.IO) {
@@ -75,10 +79,15 @@ class LoopbackReceiver(private val scope: CoroutineScope) {
         }
     }
 
-    private companion object {
-        const val HOST = "127.0.0.1"
-        const val PATH = "/callback"
-        const val TIMEOUT_MS = 10 * 60 * 1000
-        const val READ_TIMEOUT_MS = 10_000
+    companion object {
+        /**
+         * Fixed port: the Spotify dashboard refuses a loopback redirect URI
+         * without a port, so http://127.0.0.1:43821/callback is registered
+         */
+        const val PORT = 43821
+        private const val HOST = "127.0.0.1"
+        private const val PATH = "/callback"
+        private const val TIMEOUT_MS = 10 * 60 * 1000
+        private const val READ_TIMEOUT_MS = 10_000
     }
 }

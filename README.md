@@ -32,7 +32,7 @@ L'accesso a Spotify usa il flusso ufficiale con PKCE: l'app non contiene passwor
 
 1. Vai su [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard) e premi **Create app**.
 2. Compila così:
-   - **Redirect URI**: `http://127.0.0.1/callback`, senza porta, poi premi *Add* e controlla che compaia nell'elenco. Gli schemi come `nomeapp://` non sono più accettati per le app nuove;
+   - **Redirect URI**: `http://127.0.0.1:43821/callback` (esattamente così, con la porta), poi premi *Add* e controlla che compaia nell'elenco. Gli schemi come `nomeapp://` e gli indirizzi senza porta vengono rifiutati;
    - **APIs used**: spunta **Web API**;
    - nome e descrizione come preferisci.
 3. In **User Management** aggiungi il tuo nome e l'email del tuo account Spotify.

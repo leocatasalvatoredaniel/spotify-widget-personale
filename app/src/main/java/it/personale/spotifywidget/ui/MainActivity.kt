@@ -7,6 +7,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -245,7 +246,15 @@ private fun AccountCard(resumes: Int) {
             !loggedIn -> {
                 Text(stringResource(R.string.account_logged_out), style = MaterialTheme.typography.bodyMedium)
                 Button(onClick = {
-                    CustomTabsIntent.Builder().build().launchUrl(context, app.startLogin())
+                    runCatching { app.startLogin() }
+                        .onSuccess { CustomTabsIntent.Builder().build().launchUrl(context, it) }
+                        .onFailure {
+                            Toast.makeText(
+                                context,
+                                context.getString(R.string.login_failed, it.message),
+                                Toast.LENGTH_LONG,
+                            ).show()
+                        }
                 }) { Text(stringResource(R.string.account_connect)) }
             }
             else -> {
