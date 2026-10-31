@@ -3,6 +3,7 @@ package it.personale.spotifywidget.widget
 import kotlin.math.ceil
 import kotlin.math.exp
 import kotlin.math.roundToInt
+import kotlin.math.sqrt
 
 /**
  * The background of the Samsung widgets, measured on the Home screen of a
@@ -18,6 +19,19 @@ object BlurMath {
 
     /** How much stronger the colors get */
     const val SATURATION = 2.77f
+
+    /**
+     * Blur of a wallpaper drawn by an app of wallpapers (One UI reports the
+     * photo of the Home screen so): its image is the photo before One UI
+     * blurs it on the Home screen, so it gets that blur too. Estimated (about
+     * 12 dp) on screenshots of Samsung widgets next to these ones on the same
+     * wallpaper; a rough estimate, the screenshots differ by about 10/255.
+     */
+    const val HOME_BLUR_DP = 12f
+
+    /** Spread of the blur (dp) for the image of the wallpaper */
+    fun blurDp(drawnByApp: Boolean): Float =
+        if (drawnByApp) sqrt(BLUR_DP * BLUR_DP + HOME_BLUR_DP * HOME_BLUR_DP) else BLUR_DP
 
     /** Gaussian blur of ARGB [pixels]; the edges repeat outwards. The result is opaque. */
     fun gaussian(pixels: IntArray, width: Int, height: Int, sigma: Float): IntArray {

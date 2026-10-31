@@ -96,6 +96,8 @@ Il colore della barra segue la stessa regola di One UI: la tinta della copertina
 - **Spotify chiuso**: resta l'ultimo brano, in pausa. Play apre Spotify e avvia la musica appena è pronto.
 - Il **titolo scorre** se il launcher lo permette; altrimenti viene tagliato.
 - Angoli arrotondati e sfocatura da Android 12.
+- **Sfocatura durante lo scorrimento**: i widget Samsung sono sfocati dal launcher in tempo reale, quindi mentre scorri tra le schermate mostrano sempre lo sfondo che hanno dietro. Il widget di un'app è un'immagine fissa: mentre scorri si sposta con il widget, e torna allineata quando la schermata si ferma. Se ti dà fastidio, spegni _Sfocatura_.
+- **Sfondi disegnati da un'app** (One UI li segnala come animati, anche quando sono una foto): l'immagine letta è la foto prima che One UI la sfochi sulla Home, quindi il widget aggiunge circa 12 dp di sfocatura. È una stima fatta sugli screenshot.
 - **Sfocatura**: lo sfondo si sposta con il widget solo dopo un tocco; Samsung Home non deve far scorrere lo sfondo tra le pagine (è l'impostazione predefinita).
 
 ## Sviluppo

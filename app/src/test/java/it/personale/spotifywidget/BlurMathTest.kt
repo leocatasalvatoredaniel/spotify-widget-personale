@@ -55,4 +55,11 @@ class BlurMathTest {
         val pixels = intArrayOf(0xFF000000.toInt(), 0xFFFF8040.toInt())
         assertEquals(0xFF7F4020.toInt(), BlurMath.average(pixels))
     }
+
+    @Test
+    fun aWallpaperDrawnByAnAppIsBlurredMore() {
+        assertEquals(BlurMath.BLUR_DP, BlurMath.blurDp(drawnByApp = false), 0f)
+        // The blur of the Home screen and the one of the widget add up
+        assertEquals(20.8f, BlurMath.blurDp(drawnByApp = true), 0.1f)
+    }
 }

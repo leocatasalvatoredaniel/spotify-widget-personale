@@ -125,7 +125,9 @@ object WallpaperBlur {
         if (!supported()) return null
         val (width, height) = realScreen(context)?.let { (w, h) -> min(w, h) to max(w, h) } ?: return null
         val density = context.resources.displayMetrics.density
-        val screen = "${width}x$height:$density"
+        // A wallpaper drawn by an app is blurred on the Home screen too
+        val live = Wallpaper.isLive(context)
+        val screen = "${width}x$height:$density:$live"
         val scale = width.toFloat() / WORK_WIDTH
         val smallHeight = (height / scale).roundToInt()
 
@@ -134,21 +136,29 @@ object WallpaperBlur {
             val id = runCatching { manager.getWallpaperId(WallpaperManager.FLAG_SYSTEM) }.getOrDefault(-1)
             val key = "system:$id:$screen"
             cached(context, key)?.let { return it }
-            readWallpaper(manager, Wallpaper.isLive(context), WORK_WIDTH, smallHeight)?.let {
-                return blur(context, key, it, width, height, Source.SYSTEM)
+            readWallpaper(manager, live, WORK_WIDTH, smallHeight)?.let {
+                return blur(context, key, it, width, height, Source.SYSTEM, live)
             }
         }
         val picked = pickedFile(context).takeIf { it.exists() } ?: return null
         val key = "picked:${picked.lastModified()}:$screen"
         cached(context, key)?.let { return it }
         val photo = decodePhoto(picked, WORK_WIDTH, smallHeight) ?: return null
-        return blur(context, key, photo, width, height, Source.PICKED)
+        return blur(context, key, photo, width, height, Source.PICKED, live)
     }
 
     private fun cached(context: Context, key: String) = context.app.blurredScreen?.takeIf { it.key == key }
 
     /** [wallpaper] on a screen [width] x [height], as One UI Home shows it (filling it, centered), blurred */
-    private fun blur(context: Context, key: String, wallpaper: Bitmap, width: Int, height: Int, source: Source): Screen {
+    private fun blur(
+        context: Context,
+        key: String,
+        wallpaper: Bitmap,
+        width: Int,
+        height: Int,
+        source: Source,
+        live: Boolean,
+    ): Screen {
         val density = context.resources.displayMetrics.density
         val scale = width.toFloat() / WORK_WIDTH
         val smallWidth = WORK_WIDTH
@@ -164,7 +174,7 @@ object WallpaperBlur {
         small.getPixels(pixels, 0, smallWidth, 0, 0, smallWidth, smallHeight)
         small.recycle()
 
-        val blurred = BlurMath.gaussian(pixels, smallWidth, smallHeight, BlurMath.BLUR_DP * density / scale)
+        val blurred = BlurMath.gaussian(pixels, smallWidth, smallHeight, BlurMath.blurDp(live) * density / scale)
         return Screen(key, smallWidth, smallHeight, scale, blurred, width, BlurMath.average(pixels), source)
             .also { context.app.blurredScreen = it }
     }
