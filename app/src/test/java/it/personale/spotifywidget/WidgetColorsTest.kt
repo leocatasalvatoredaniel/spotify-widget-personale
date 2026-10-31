@@ -44,17 +44,43 @@ class WidgetColorsTest {
 
     @Test
     fun veilAsTheSamsungWidgets() {
+        val brown = 0xFF8A5A30.toInt()
         // Plain black at full opacity, as the Samsung widgets
-        assertEquals(0xFF010101.toInt(), WidgetColors.veil(0xFF8A5A30.toInt(), dark = true, opacity = 100))
-        // 29% at opacity 0 and 64% at 50 (measured)
+        assertEquals(0xFF010101.toInt(), WidgetColors.veil(brown, dark = true, opacity = 100))
+        // 29% at opacity 0 (settings preview) and 58.5% at 50 (Home screen)
         assertEquals(0x4A, WidgetColors.veil(null, dark = true, opacity = 0) ushr 24)
-        assertEquals(0xA4, WidgetColors.veil(null, dark = true, opacity = 50) ushr 24)
-        // Without opacity the veil takes the color of the wallpaper, dark or light
-        val (hue, saturation, lightness) = WidgetColors.hsl(WidgetColors.veil(0xFF8A5A30.toInt(), dark = true, opacity = 0))
-        assertEquals(28f, hue, 3f)
-        assertTrue(saturation > 0.3f)
-        assertEquals(0.1f, lightness, 0.02f)
-        assertTrue(WidgetColors.hsl(WidgetColors.veil(0xFF8A5A30.toInt(), dark = false, opacity = 0)).third > 0.9f)
+        assertEquals(0x95, WidgetColors.veil(null, dark = true, opacity = 50) ushr 24)
+        // Without the colors of the wallpaper a neutral gray of 18
+        assertEquals(0x95121212.toInt(), WidgetColors.veil(null, dark = true, opacity = 50))
+        // With them, the hue of the wallpaper, dark
+        val (hue, saturation, lightness) = WidgetColors.hsl(WidgetColors.veil(brown, dark = true, opacity = 50))
+        assertEquals(28f, hue, 8f)
+        assertTrue(saturation > 0.5f)
+        assertTrue(lightness < 0.1f)
+        // Light: the color of the wallpaper, very light
+        assertTrue(WidgetColors.hsl(WidgetColors.veil(brown, dark = false, opacity = 0)).third > 0.9f)
+        assertEquals(0xA4, WidgetColors.veil(null, dark = false, opacity = 50) ushr 24)
+    }
+
+    @Test
+    fun veilAsTheSamsungWidgetOnTheHomeScreen() {
+        // Wallpaper behind the widgets in the screenshot (average 74, 64, 52):
+        // Samsung at 50% gives on average 47, 36, 24 there
+        val veil = WidgetColors.veil(0xFF4A4034.toInt(), dark = true, opacity = 50)
+        val alpha = (veil ushr 24) / 255f
+        val behind = listOf(73.6f, 64.1f, 51.8f)
+        val samsung = listOf(47.1f, 35.6f, 23.8f)
+        listOf(16, 8, 0).forEachIndexed { i, shift ->
+            val result = alpha * ((veil shr shift) and 0xFF) + (1 - alpha) * behind[i]
+            assertEquals(samsung[i], result, 2f)
+        }
+    }
+
+    @Test
+    fun veilOfAStrongWallpaperStaysDark() {
+        // A strongly colored wallpaper does not turn the veil into a bright color
+        val veil = WidgetColors.veil(0xFF0040FF.toInt(), dark = true, opacity = 50)
+        listOf(16, 8, 0).forEach { assertTrue(((veil shr it) and 0xFF) <= 18 + 20) }
     }
 
     @Test

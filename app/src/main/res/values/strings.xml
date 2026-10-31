@@ -39,7 +39,10 @@
     <string name="background_dark">Scuro</string>
     <string name="background_light">Chiaro</string>
     <string name="background_cover_footer">La copertina del brano, sfumata come nel player del sistema. Spegnila per uno sfondo come i widget Samsung.</string>
-    <string name="background_samsung_footer">Sfondo velato come i widget Samsung, nel colore dello sfondo del telefono. Non può sfocare ciò che c\'è dietro come i loro: è riservato ai widget di sistema. Per somigliare ai widget Samsung della tua Home usa la stessa opacità.</string>
+    <string name="background_samsung_footer">Sfondo velato come i widget Samsung. Non può sfocare ciò che c\'è dietro come i loro: è riservato ai widget di sistema. Per somigliare ai widget Samsung della tua Home usa la stessa opacità.</string>
+    <string name="wallpaper_color_found">Il velo prende il colore dello sfondo del telefono.</string>
+    <string name="wallpaper_color_missing">Il telefono non comunica il colore dello sfondo, quindi il velo è grigio neutro.</string>
+    <string name="wallpaper_color_live">Lo sfondo del telefono è animato e non comunica il suo colore, quindi il velo è grigio neutro.</string>
     <string name="font_samsung">Testo nel font di sistema Samsung: «%1$s» (%2$s).</string>
     <string name="font_android">Font di sistema Samsung non trovato: il testo usa il font di Android.</string>
     <string name="spotify_title">Spotify</string>

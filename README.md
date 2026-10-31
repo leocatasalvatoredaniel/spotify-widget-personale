@@ -72,7 +72,9 @@ In alternativa, nell'app (**Sfondo del widget**) puoi spegnere **Copertina come 
 - **Opacità**: 0, 50 o 100%;
 - **Colori**: Scuro o Chiaro.
 
-Le tonalità sono misurate sulle impostazioni dei widget Samsung. La sfocatura di ciò che sta dietro non è possibile, perché è riservata ai widget di sistema: al suo posto la velatura prende il colore principale dello sfondo del telefono (da Android 12). Per somigliare agli altri widget della Home usa la loro stessa opacità.
+I widget Samsung sfocano lo sfondo che hanno dietro, ne rinforzano i colori e lo scuriscono. Il widget di un'app non può sfocare ciò che sta dietro, perché è riservato ai widget di sistema: può solo stendere sopra un velo di colore. Il velo scuro al 50% è misurato sulla Home, accanto a un widget Samsung al 50% sullo stesso sfondo: lascia passare la stessa luce e prende i colori dello sfondo rinforzati, così il colore medio coincide; manca solo la sfocatura. Opacità 0 e 100 e il velo chiaro sono misurati sull'anteprima delle impostazioni dei widget Samsung.
+
+Il colore dello sfondo lo comunica il telefono (da Android 12). Se non lo comunica, per esempio con uno sfondo animato, il velo è grigio neutro. Sotto **Sfondo del widget**, nell'app, è scritto quale dei due casi vale. Per somigliare agli altri widget della Home usa la loro stessa opacità.
 
 Il testo usa il font di sistema Samsung (One UI Sans), come il player della tendina. I widget prendono il font di Android a meno che non si indichi una famiglia di sistema per nome: l'app la cerca negli elenchi dei font del telefono. In **Widget**, nell'app, è scritto quale ha trovato; se non la trova, il testo resta nel font di Android.
 

@@ -1,7 +1,6 @@
 package it.personale.spotifywidget.widget
 
 import android.app.PendingIntent
-import android.app.WallpaperManager
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
 import android.content.Context
@@ -416,18 +415,9 @@ private class WidgetData(
                 cover = if (state.background.cover) ImageCache.load(state.nowPlaying?.artPath) else null,
                 device = Playback.outputName(context, controller),
                 output = Playback.outputSwitcher(context),
-                wallpaperColor = if (state.background.cover) null else wallpaperColor(context),
+                wallpaperColor = if (state.background.cover) null else Wallpaper.color(context),
             )
         }
-
-        // The colors of the wallpaper can be read from Android 8.1
-        private fun wallpaperColor(context: Context): Int? = runCatching {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O_MR1) return null
-            WallpaperManager.getInstance(context)
-                .getWallpaperColors(WallpaperManager.FLAG_SYSTEM)
-                ?.primaryColor
-                ?.toArgb()
-        }.getOrNull()
     }
 }
 

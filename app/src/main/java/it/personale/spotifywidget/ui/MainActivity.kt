@@ -39,6 +39,7 @@ import it.personale.spotifywidget.app
 import it.personale.spotifywidget.data.WidgetBackground
 import it.personale.spotifywidget.playback.Playback
 import it.personale.spotifywidget.widget.SpotifyWidgetReceiver
+import it.personale.spotifywidget.widget.Wallpaper
 import it.personale.spotifywidget.widget.WidgetRenderer
 import kotlinx.coroutines.launch
 
@@ -204,9 +205,19 @@ private fun BackgroundSection() {
         }
     }
     OneUiCard(rows)
-    OneUiFooter(
-        stringResource(if (background.cover) R.string.background_cover_footer else R.string.background_samsung_footer),
-    )
+    if (background.cover) {
+        OneUiFooter(stringResource(R.string.background_cover_footer))
+    } else {
+        // Whether the phone tells the color of its wallpaper, which tints the veil
+        val wallpaper = remember {
+            when {
+                Wallpaper.color(context) != null -> R.string.wallpaper_color_found
+                Wallpaper.isLive(context) -> R.string.wallpaper_color_live
+                else -> R.string.wallpaper_color_missing
+            }
+        }
+        OneUiFooter(stringResource(R.string.background_samsung_footer) + " " + stringResource(wallpaper))
+    }
 }
 
 private fun open(context: Context, intent: Intent) {
