@@ -1,11 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <uses-permission android:name="android.permission.INTERNET" />
-
-    <!-- Launching and controlling the Spotify app -->
     <queries>
+        <!-- Launching and controlling the Spotify app -->
         <package android:name="com.spotify.music" />
+        <!-- Output switcher of the system, as the button of the media player -->
+        <intent>
+            <action android:name="com.android.settings.panel.action.MEDIA_OUTPUT" />
+        </intent>
+        <intent>
+            <action android:name="com.android.systemui.action.LAUNCH_MEDIA_OUTPUT_DIALOG" />
+        </intent>
     </queries>
 
     <application
@@ -30,32 +35,16 @@
             </intent-filter>
         </activity>
 
-        <!-- Back to the app from the page shown at the end of the Spotify login -->
+        <!-- Play pressed with Spotify closed: opens Spotify and starts the music -->
         <activity
-            android:name=".ui.AuthCallbackActivity"
-            android:exported="true"
-            android:launchMode="singleTask"
-            android:theme="@style/Theme.WidgetMusica.Translucent">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data
-                    android:host="callback"
-                    android:scheme="${redirectScheme}" />
-            </intent-filter>
-        </activity>
-
-        <!-- Starts a playlist or a track from the widget, even with Spotify closed -->
-        <activity
-            android:name=".ui.PlayActivity"
+            android:name=".ui.LaunchSpotifyActivity"
             android:excludeFromRecents="true"
             android:exported="false"
             android:noHistory="true"
             android:taskAffinity=""
             android:theme="@style/Theme.WidgetMusica.Translucent" />
 
-        <!-- Reads what Spotify is playing and controls it, as music widgets do -->
+        <!-- Reads what Spotify is playing and controls it, as the media player of the system -->
         <service
             android:name=".playback.MediaListenerService"
             android:exported="true"

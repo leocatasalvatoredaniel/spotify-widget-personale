@@ -1,0 +1,67 @@
+package it.personale.spotifywidget
+
+import it.personale.spotifywidget.data.NowPlaying
+import it.personale.spotifywidget.data.SessionAction
+import it.personale.spotifywidget.data.formatTime
+import it.personale.spotifywidget.data.progressOf
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class NowPlayingTest {
+    private val track = NowPlaying(
+        title = "Prayer in C",
+        artist = "Lilly Wood and The Prick",
+        durationMs = 189_000,
+        positionMs = 49_000,
+        positionAt = 1_000_000,
+        isPlaying = true,
+        actions = listOf(SessionAction("shuffle", "Shuffle", 1)),
+    )
+
+    @Test
+    fun positionMovesWhilePlaying() {
+        assertEquals(53_000, track.positionAt(1_004_000))
+    }
+
+    @Test
+    fun positionStaysWhenPaused() {
+        assertEquals(49_000, track.copy(isPlaying = false).positionAt(1_004_000))
+    }
+
+    @Test
+    fun positionStopsAtTheEndOfTheTrack() {
+        assertEquals(189_000, track.positionAt(2_000_000))
+    }
+
+    @Test
+    fun positionIsNeverBeforeTheStart() {
+        assertEquals(49_000, track.positionAt(900_000))
+    }
+
+    @Test
+    fun closingSpotifyKeepsTheTrackPaused() {
+        val stopped = track.stopped(1_010_000)
+        assertFalse(stopped.isPlaying)
+        assertEquals(59_000, stopped.positionMs)
+        assertEquals(59_000, stopped.positionAt(1_100_000))
+        assertTrue(stopped.actions.isEmpty())
+    }
+
+    @Test
+    fun timesAreWrittenAsTheSystemPlayer() {
+        assertEquals("00:00", formatTime(0))
+        assertEquals("00:49", formatTime(49_999))
+        assertEquals("03:09", formatTime(189_000))
+        assertEquals("1:02:03", formatTime(3_723_000))
+        assertEquals("00:00", formatTime(-5))
+    }
+
+    @Test
+    fun progressOfTheBar() {
+        assertEquals(259, progressOf(49_000, 189_000))
+        assertEquals(1000, progressOf(200_000, 189_000))
+        assertEquals(0, progressOf(5_000, 0))
+    }
+}

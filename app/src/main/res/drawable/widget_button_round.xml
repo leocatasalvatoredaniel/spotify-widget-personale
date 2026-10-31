@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Previous, play and next: a light circle, as in the system media player -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android"
+    android:color="#40FFFFFF">
+    <item>
+        <inset android:inset="4dp">
+            <shape android:shape="oval">
+                <solid android:color="#1FFFFFFF" />
+            </shape>
+        </inset>
+    </item>
+</ripple>

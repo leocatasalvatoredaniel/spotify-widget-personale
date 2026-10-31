@@ -1,18 +1,9 @@
-import java.util.Properties
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
 }
-
-// The Spotify Client ID stays on this computer, in local.properties
-val localProperties = Properties().apply {
-    val file = rootProject.file("local.properties")
-    if (file.exists()) file.inputStream().use { load(it) }
-}
-val spotifyClientId: String = localProperties.getProperty("spotify.clientId", "")
 
 android {
     namespace = "it.personale.spotifywidget"
@@ -22,11 +13,8 @@ android {
         applicationId = "it.personale.spotifywidget"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
-
-        buildConfigField("String", "SPOTIFY_CLIENT_ID", "\"$spotifyClientId\"")
-        manifestPlaceholders["redirectScheme"] = "spotifywidget"
+        versionCode = 2
+        versionName = "2.0"
     }
 
     buildTypes {
@@ -45,7 +33,6 @@ android {
 
     buildFeatures {
         compose = true
-        buildConfig = true
     }
 }
 
@@ -62,12 +49,8 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.glance.appwidget)
     implementation(libs.androidx.datastore.preferences)
-    implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.palette.ktx)
-    implementation(libs.androidx.browser)
-    implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
 

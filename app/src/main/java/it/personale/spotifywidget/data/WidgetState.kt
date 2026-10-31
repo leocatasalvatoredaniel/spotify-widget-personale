@@ -1,75 +1,85 @@
 package it.personale.spotifywidget.data
 
-import it.personale.spotifywidget.api.PlayHistory
-import it.personale.spotifywidget.api.bestFor
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 
-/** What Spotify is playing, read from the media session of the phone */
+/** JSON of the saved state: fields of older versions are ignored */
+val StateJson = Json {
+    ignoreUnknownKeys = true
+    explicitNulls = false
+    coerceInputValues = true
+}
+
+/**
+ * A button that Spotify adds to its media controls, e.g. shuffle or add to
+ * the library: the widget shows it with the icon chosen by Spotify
+ */
+@Serializable
+data class SessionAction(
+    val action: String,
+    val name: String,
+    /** Drawable of the Spotify app */
+    val icon: Int,
+)
+
+/** What Spotify is playing, read from its media session */
 @Serializable
 data class NowPlaying(
     val title: String,
     val artist: String,
     val album: String = "",
-    /** spotify:track:… when known */
-    val trackUri: String? = null,
     val artPath: String? = null,
-    /** Main color of the cover */
-    val color: Int? = null,
+    /** Color of the progress bar, from the cover */
+    val accent: Int? = null,
     val isPlaying: Boolean = false,
+    val durationMs: Long = 0,
+    /** Position read at [positionAt] (System.currentTimeMillis) */
+    val positionMs: Long = 0,
+    val positionAt: Long = 0,
+    /** Buttons of Spotify, in its order */
+    val actions: List<SessionAction> = emptyList(),
+    /** Playing on another device with Spotify Connect */
+    val remote: Boolean = false,
 ) {
     val key: String get() = "$title|$artist|$album"
+
+    /** Position at the time [now], within the track */
+    fun positionAt(now: Long): Long {
+        val elapsed = if (isPlaying) (now - positionAt).coerceAtLeast(0) else 0
+        val position = (positionMs + elapsed).coerceAtLeast(0)
+        return if (durationMs > 0) position.coerceAtMost(durationMs) else position
+    }
+
+    /** Spotify closed: the track stays in the widget, paused where it was */
+    fun stopped(now: Long): NowPlaying = copy(
+        isPlaying = false,
+        positionMs = positionAt(now),
+        positionAt = now,
+        actions = emptyList(),
+        remote = false,
+    )
 }
-
-@Serializable
-data class PlaylistItem(
-    val uri: String,
-    val name: String,
-    val imageUrl: String? = null,
-    val imagePath: String? = null,
-)
-
-@Serializable
-data class RecentItem(
-    val trackUri: String,
-    val title: String,
-    val artist: String,
-    val contextUri: String? = null,
-    val imageUrl: String? = null,
-    val imagePath: String? = null,
-)
 
 @Serializable
 data class WidgetState(
     val nowPlaying: NowPlaying? = null,
-    /** Whether the track [likedUri] is in the liked songs, null if unknown */
-    val liked: Boolean? = null,
-    val likedUri: String? = null,
-    val favorites: List<PlaylistItem> = emptyList(),
-    val recent: List<RecentItem> = emptyList(),
-) {
-    /** Liked state of the track playing now, null if unknown */
-    val nowPlayingLiked: Boolean?
-        get() = liked.takeIf { nowPlaying?.trackUri != null && nowPlaying.trackUri == likedUri }
+    /** Notification icon of Spotify, a drawable of the Spotify app */
+    val appIcon: Int? = null,
+)
+
+/** Time as in the system player: 00:49, 03:09, 1:02:03 */
+fun formatTime(millis: Long): String {
+    val seconds = millis.coerceAtLeast(0) / 1000
+    val hours = seconds / 3600
+    val minutes = seconds / 60 % 60
+    val rest = seconds % 60
+    return if (hours > 0) "%d:%02d:%02d".format(hours, minutes, rest)
+    else "%02d:%02d".format(minutes, rest)
 }
 
-const val MAX_FAVORITES = 4
-const val MAX_RECENT = 8
-// Covers are downloaded at this size (px): enough for the widget, light in memory
-const val COVER_SIZE_PX = 160
+const val PROGRESS_MAX = 1000
 
-/**
- * Recently played tracks for the widget: each track once, newest first
- */
-fun List<PlayHistory>.toRecentItems(limit: Int = MAX_RECENT): List<RecentItem> =
-    distinctBy { it.track.uri }
-        .filter { it.track.uri.startsWith("spotify:track:") }
-        .take(limit)
-        .map {
-            RecentItem(
-                trackUri = it.track.uri,
-                title = it.track.name,
-                artist = it.track.artistNames,
-                contextUri = it.context?.uri,
-                imageUrl = it.track.album.images.bestFor(COVER_SIZE_PX),
-            )
-        }
+/** Progress of the bar, from 0 to [PROGRESS_MAX] */
+fun progressOf(position: Long, duration: Long): Int =
+    if (duration <= 0) 0
+    else (position.coerceIn(0, duration) * PROGRESS_MAX / duration).toInt()

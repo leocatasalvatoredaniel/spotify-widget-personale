@@ -20,7 +20,7 @@ echo Java usato: %JDKDIR%
 set "JAVA_HOME=%JDKDIR%"
 set "PATH=%JAVA_HOME%\bin;%PATH%"
 
-rem First run: local.properties with the Android SDK and an empty Client ID
+rem First run: local.properties with the folder of the Android SDK
 if not exist local.properties (
   if not exist "%LOCALAPPDATA%\Android\Sdk" (
     echo Android SDK non trovato: installa Android Studio e aprilo una volta.
@@ -28,19 +28,6 @@ if not exist local.properties (
     exit /b 1
   )
   echo sdk.dir=%LOCALAPPDATA:\=/%/Android/Sdk> local.properties
-  echo spotify.clientId=>> local.properties
-)
-
-rem The Client ID of the Spotify app must be written in local.properties
-findstr /r /c:"^spotify.clientId=..*" local.properties >nul
-if errorlevel 1 (
-  echo.
-  echo Manca il Client ID di Spotify.
-  echo Si apre local.properties: scrivi il Client ID dopo "spotify.clientId=",
-  echo salva, chiudi il Blocco note e avvia di nuovo questo file.
-  notepad local.properties
-  pause
-  exit /b 1
 )
 
 call gradlew.bat assembleRelease

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Progress of the track: a light track and a rounded bar tinted with the
+     color of the cover (from Android 12) -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@android:id/background">
+        <shape>
+            <corners android:radius="2dp" />
+            <solid android:color="#59FFFFFF" />
+        </shape>
+    </item>
+    <item android:id="@android:id/progress">
+        <scale
+            android:scaleWidth="100%"
+            android:scaleGravity="start|center_vertical">
+            <shape>
+                <corners android:radius="2dp" />
+                <solid android:color="@android:color/white" />
+            </shape>
+        </scale>
+    </item>
+</layer-list>

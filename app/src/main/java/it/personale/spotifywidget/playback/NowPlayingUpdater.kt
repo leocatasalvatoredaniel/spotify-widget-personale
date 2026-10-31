@@ -2,12 +2,13 @@ package it.personale.spotifywidget.playback
 
 import android.graphics.Bitmap
 import android.media.MediaMetadata
-import android.media.session.PlaybackState
+import android.media.session.MediaController
 import androidx.palette.graphics.Palette
 import it.personale.spotifywidget.WidgetApp
 import it.personale.spotifywidget.data.NowPlaying
-import it.personale.spotifywidget.widget.RefreshWorker
-import it.personale.spotifywidget.widget.updateWidgets
+import it.personale.spotifywidget.data.SessionAction
+import it.personale.spotifywidget.widget.WidgetColors
+import it.personale.spotifywidget.widget.WidgetRenderer
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -20,51 +21,56 @@ import java.io.File
 class NowPlayingUpdater(private val app: WidgetApp) {
     private var pending: Job? = null
 
-    fun onSessionChanged(metadata: MediaMetadata?, state: PlaybackState?) {
+    fun onSessionChanged(controller: MediaController?) {
         pending?.cancel()
         pending = app.scope.launch {
             delay(DEBOUNCE_MS)
-            apply(metadata, state)
+            apply(controller)
         }
     }
 
-    private suspend fun apply(metadata: MediaMetadata?, state: PlaybackState?) {
+    private suspend fun apply(controller: MediaController?) {
+        val metadata = controller?.metadata
+        val state = controller?.playbackState
+        val now = System.currentTimeMillis()
         val title = metadata?.getString(MediaMetadata.METADATA_KEY_TITLE)
             ?: metadata?.getString(MediaMetadata.METADATA_KEY_DISPLAY_TITLE)
         if (metadata == null || title.isNullOrBlank()) {
-            app.store.update { it.copy(nowPlaying = null) }
-            updateWidgets(app)
+            // Spotify closed: the last track stays, paused
+            app.store.update { it.copy(nowPlaying = it.nowPlaying?.stopped(now)) }
+            WidgetRenderer.renderAll(app)
             return
         }
         val artist = metadata.getString(MediaMetadata.METADATA_KEY_ARTIST)
             ?: metadata.getString(MediaMetadata.METADATA_KEY_DISPLAY_SUBTITLE).orEmpty()
         val album = metadata.getString(MediaMetadata.METADATA_KEY_ALBUM).orEmpty()
-        val mediaId = metadata.getString(MediaMetadata.METADATA_KEY_MEDIA_ID)
-        val isPlaying = state?.state == PlaybackState.STATE_PLAYING ||
-            state?.state == PlaybackState.STATE_BUFFERING
 
         val previous = app.store.read().nowPlaying
         val key = NowPlaying(title, artist, album).key
-        val sameTrack = previous?.key == key
-        val keepArt = sameTrack && previous?.artPath?.let { File(it).exists() } == true
+        val keepArt = previous?.key == key && previous.artPath?.let { File(it).exists() } == true
         val art = if (keepArt) null else coverOf(metadata)
         val artPath = if (keepArt) previous?.artPath else art?.let { app.images.saveNowPlaying(it, key) }
-        val color = if (keepArt) previous?.color else art?.let { mainColor(it) }
+        val accent = if (keepArt) previous?.accent else art?.let { accentOf(it) }
 
         val nowPlaying = NowPlaying(
             title = title,
             artist = artist,
             album = album,
-            trackUri = mediaId?.takeIf { it.startsWith("spotify:track:") }
-                ?: previous?.trackUri?.takeIf { sameTrack },
             artPath = artPath,
-            color = color,
-            isPlaying = isPlaying,
+            accent = accent,
+            isPlaying = Playback.isPlaying(state),
+            durationMs = metadata.getLong(MediaMetadata.METADATA_KEY_DURATION).coerceAtLeast(0),
+            positionMs = state?.let { Playback.positionNow(it) }?.coerceAtLeast(0) ?: 0,
+            positionAt = now,
+            actions = state?.customActions.orEmpty()
+                .filter { it.icon != 0 }
+                .map { SessionAction(it.action, it.name?.toString().orEmpty(), it.icon) },
+            remote = controller.playbackInfo?.playbackType ==
+                MediaController.PlaybackInfo.PLAYBACK_TYPE_REMOTE,
         )
         app.store.update { it.copy(nowPlaying = nowPlaying) }
-        updateWidgets(app)
-        // A new track: find out whether it is liked and refresh the recent ones
-        if (!sameTrack) RefreshWorker.refreshSoon(app)
+        if (!keepArt) app.images.keepOnly(setOfNotNull(artPath))
+        WidgetRenderer.renderAll(app)
     }
 
     private fun coverOf(metadata: MediaMetadata): Bitmap? =
@@ -72,9 +78,11 @@ class NowPlayingUpdater(private val app: WidgetApp) {
             ?: metadata.getBitmap(MediaMetadata.METADATA_KEY_ART)
             ?: metadata.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON)
 
-    private fun mainColor(bitmap: Bitmap): Int? = runCatching {
+    /** A lively color of the cover for the progress bar, as the system player */
+    private fun accentOf(bitmap: Bitmap): Int? = runCatching {
         val palette = Palette.from(bitmap).maximumColorCount(16).generate()
-        (palette.darkVibrantSwatch ?: palette.vibrantSwatch ?: palette.dominantSwatch)?.rgb
+        val swatch = palette.vibrantSwatch ?: palette.lightVibrantSwatch ?: palette.dominantSwatch
+        swatch?.rgb?.let(WidgetColors::accent)
     }.getOrNull()
 
     private companion object {
