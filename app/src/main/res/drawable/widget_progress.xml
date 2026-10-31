@@ -4,7 +4,8 @@
      the color of the cover. The thumb itself is widget_progress_thumb, the
      rest of the track widget_progress_track. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Glow around the thumb (secondary progress, same value) -->
+    <!-- Glow around the thumb (secondary progress, same value): the box of the
+         thumb grown by 8 dp on every side, so it is centered on the thumb -->
     <item android:id="@android:id/secondaryProgress">
         <scale
             android:scaleGravity="start|center_vertical"
@@ -12,17 +13,18 @@
             <layer-list>
                 <item
                     android:gravity="end|center_vertical"
-                    android:width="@dimen/progress_glow"
-                    android:height="@dimen/progress_glow"
-                    android:right="@dimen/progress_glow_overhang">
-                    <shape android:shape="oval">
-                        <gradient
-                            android:centerColor="#99FFFFFF"
-                            android:endColor="#00FFFFFF"
-                            android:gradientRadius="@dimen/progress_glow_radius"
-                            android:startColor="#FFFFFFFF"
-                            android:type="radial" />
-                    </shape>
+                    android:width="@dimen/progress_thumb"
+                    android:height="@dimen/progress_thumb">
+                    <inset android:inset="@dimen/progress_glow_overhang">
+                        <shape android:shape="oval">
+                            <gradient
+                                android:centerColor="#99FFFFFF"
+                                android:endColor="#00FFFFFF"
+                                android:gradientRadius="@dimen/progress_glow_radius"
+                                android:startColor="#FFFFFFFF"
+                                android:type="radial" />
+                        </shape>
+                    </inset>
                 </item>
             </layer-list>
         </scale>

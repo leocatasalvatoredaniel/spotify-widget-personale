@@ -8,12 +8,10 @@
     <dimen name="progress_track_radius">2.25dp</dimen>
     <dimen name="progress_thumb">16dp</dimen>
     <dimen name="progress_thumb_radius">8dp</dimen>
-    <dimen name="progress_thumb_dot">12dp</dimen>
     <dimen name="progress_thumb_ring">2dp</dimen>
     <dimen name="progress_gap">3.5dp</dimen>
-    <dimen name="progress_glow">32dp</dimen>
     <dimen name="progress_glow_radius">16dp</dimen>
-    <!-- The glow is centered on the thumb: it passes its end by 8 dp, and the
-         bar by 8 dp above and below (the layout does not clip it) -->
+    <!-- The glow is the box of the thumb grown by 8 dp on every side (32 dp):
+         it passes the bar above and below, the layout does not clip it -->
     <dimen name="progress_glow_overhang">-8dp</dimen>
 </resources>
