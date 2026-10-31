@@ -30,7 +30,7 @@
             </intent-filter>
         </activity>
 
-        <!-- Spotify login redirect: spotifywidget://callback -->
+        <!-- Back to the app from the page shown at the end of the Spotify login -->
         <activity
             android:name=".ui.AuthCallbackActivity"
             android:exported="true"

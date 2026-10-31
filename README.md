@@ -20,7 +20,7 @@ Non è un'app di Spotify e non va distribuita. Usa solo strumenti ufficiali:
 | Brano in riproduzione, copertina, play/pausa, avanti, indietro | Sessione multimediale di Spotify sul telefono: in tempo reale, senza internet. Richiede **Accesso alle notifiche**: l'app usa solo la riproduzione, non legge né salva le notifiche. |
 | Mi piace, playlist, ascoltati di recente, avvio di una playlist | Web API di Spotify, con il tuo account. |
 
-L'accesso a Spotify usa il flusso ufficiale con PKCE: l'app non contiene password né segreti. I token sono cifrati con una chiave del Keystore di Android e non finiscono nei backup.
+L'accesso a Spotify usa il flusso ufficiale con PKCE: l'app non contiene password né segreti. Il login avviene nel browser e torna all'app tramite un indirizzo locale del telefono (`http://127.0.0.1`), come Spotify richiede per le app nuove dal 2025 e come raccomanda lo standard per le app native (RFC 8252). I token sono cifrati con una chiave del Keystore di Android e non finiscono nei backup.
 
 ## Requisiti
 
@@ -32,7 +32,7 @@ L'accesso a Spotify usa il flusso ufficiale con PKCE: l'app non contiene passwor
 
 1. Vai su [developer.spotify.com/dashboard](https://developer.spotify.com/dashboard) e premi **Create app**.
 2. Compila così:
-   - **Redirect URI**: `spotifywidget://callback` (premi *Add*);
+   - **Redirect URI**: `http://127.0.0.1/callback`, senza porta, poi premi *Add* e controlla che compaia nell'elenco. Gli schemi come `nomeapp://` non sono più accettati per le app nuove;
    - **APIs used**: spunta **Web API**;
    - nome e descrizione come preferisci.
 3. In **User Management** aggiungi il tuo nome e l'email del tuo account Spotify.
@@ -55,7 +55,7 @@ L'accesso a Spotify usa il flusso ufficiale con PKCE: l'app non contiene passwor
 
 1. Apri **Widget Musica**.
 2. **Accesso alle notifiche** → *Concedi l'accesso* → attiva *Widget Musica*.
-3. **Account Spotify** → *Collega Spotify* → accedi nel browser e accetta.
+3. **Account Spotify** → *Collega Spotify* → accedi nel browser e accetta. Alla fine il browser mostra «Spotify collegato»: premi *Torna a Widget Musica*.
 4. **Playlist nel widget** → *Carica le mie playlist* → scegline fino a 4.
 5. **Widget** → *Aggiungi alla schermata Home*, oppure tieni premuto sulla schermata Home → *Widget* → *Widget Musica*.
 

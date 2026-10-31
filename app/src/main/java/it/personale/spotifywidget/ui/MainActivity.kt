@@ -245,7 +245,7 @@ private fun AccountCard(resumes: Int) {
             !loggedIn -> {
                 Text(stringResource(R.string.account_logged_out), style = MaterialTheme.typography.bodyMedium)
                 Button(onClick = {
-                    CustomTabsIntent.Builder().build().launchUrl(context, app.auth.authorizationUri())
+                    CustomTabsIntent.Builder().build().launchUrl(context, app.startLogin())
                 }) { Text(stringResource(R.string.account_connect)) }
             }
             else -> {

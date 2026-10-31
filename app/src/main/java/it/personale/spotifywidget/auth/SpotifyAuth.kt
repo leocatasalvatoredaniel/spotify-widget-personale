@@ -18,7 +18,8 @@ class LoginException(message: String) : Exception(message)
 
 /**
  * Spotify login with Authorization Code + PKCE: no client secret in the app,
- * the login happens in the browser and comes back to spotifywidget://callback
+ * the login happens in the browser and comes back to the app on a loopback
+ * address (see [LoopbackReceiver])
  */
 class SpotifyAuth(private val http: OkHttpClient, private val tokens: TokenStore) {
     private val refreshMutex = Mutex()
@@ -27,15 +28,16 @@ class SpotifyAuth(private val http: OkHttpClient, private val tokens: TokenStore
     val isConfigured: Boolean get() = clientId.isNotBlank()
     val isLoggedIn: Boolean get() = tokens.load() != null
 
-    fun authorizationUri(): Uri {
+    fun authorizationUri(redirectUri: String): Uri {
         val verifier = Pkce.newVerifier()
         val state = UUID.randomUUID().toString()
         tokens.pendingVerifier = verifier
         tokens.pendingState = state
+        tokens.pendingRedirect = redirectUri
         return AUTHORIZE_URL.toUri().buildUpon()
             .appendQueryParameter("client_id", clientId)
             .appendQueryParameter("response_type", "code")
-            .appendQueryParameter("redirect_uri", REDIRECT_URI)
+            .appendQueryParameter("redirect_uri", redirectUri)
             .appendQueryParameter("code_challenge_method", "S256")
             .appendQueryParameter("code_challenge", Pkce.challenge(verifier))
             .appendQueryParameter("scope", SCOPES.joinToString(" "))
@@ -43,7 +45,7 @@ class SpotifyAuth(private val http: OkHttpClient, private val tokens: TokenStore
             .build()
     }
 
-    /** Handles spotifywidget://callback?code=…&state=… */
+    /** Handles http://127.0.0.1:<port>/callback?code=…&state=… */
     suspend fun completeLogin(callback: Uri) {
         callback.getQueryParameter("error")?.let { throw LoginException(it) }
         val code = callback.getQueryParameter("code") ?: throw LoginException("missing code")
@@ -51,11 +53,13 @@ class SpotifyAuth(private val http: OkHttpClient, private val tokens: TokenStore
             throw LoginException("state mismatch")
         }
         val verifier = tokens.pendingVerifier ?: throw LoginException("missing verifier")
+        // The token request must repeat the redirect URI of the authorization
+        val redirectUri = tokens.pendingRedirect ?: throw LoginException("missing redirect")
         val response = requestToken(
             FormBody.Builder()
                 .add("grant_type", "authorization_code")
                 .add("code", code)
-                .add("redirect_uri", REDIRECT_URI)
+                .add("redirect_uri", redirectUri)
                 .add("client_id", clientId)
                 .add("code_verifier", verifier)
                 .build(),
@@ -64,6 +68,7 @@ class SpotifyAuth(private val http: OkHttpClient, private val tokens: TokenStore
         tokens.save(response.toTokens(refreshToken))
         tokens.pendingVerifier = null
         tokens.pendingState = null
+        tokens.pendingRedirect = null
     }
 
     /** A valid access token, refreshed when needed; null when logged out */
@@ -114,7 +119,6 @@ class SpotifyAuth(private val http: OkHttpClient, private val tokens: TokenStore
     )
 
     companion object {
-        const val REDIRECT_URI = "spotifywidget://callback"
         private const val AUTHORIZE_URL = "https://accounts.spotify.com/authorize"
         private const val TOKEN_URL = "https://accounts.spotify.com/api/token"
         private const val EXPIRY_MARGIN_MS = 60_000L

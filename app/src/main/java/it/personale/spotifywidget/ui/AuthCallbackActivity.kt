@@ -4,14 +4,11 @@ import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.lifecycle.lifecycleScope
 import it.personale.spotifywidget.R
-import it.personale.spotifywidget.app
-import it.personale.spotifywidget.widget.RefreshWorker
-import kotlinx.coroutines.launch
 
 /**
- * Receives spotifywidget://callback at the end of the login in the browser
+ * Opened by the button of the page shown at the end of the Spotify login
+ * (spotifywidget://callback?status=…): back to the settings
  */
 class AuthCallbackActivity : ComponentActivity() {
 
@@ -26,20 +23,13 @@ class AuthCallbackActivity : ComponentActivity() {
     }
 
     private fun handle(intent: Intent) {
-        val uri = intent.data ?: return finish()
-        lifecycleScope.launch {
-            val result = runCatching { app.auth.completeLogin(uri) }
-            val message = result.fold(
-                onSuccess = { getString(R.string.login_done) },
-                onFailure = { getString(R.string.login_failed, it.message) },
-            )
-            Toast.makeText(this@AuthCallbackActivity, message, Toast.LENGTH_LONG).show()
-            if (result.isSuccess) RefreshWorker.refreshSoon(this@AuthCallbackActivity, 0)
-            startActivity(
-                Intent(this@AuthCallbackActivity, MainActivity::class.java)
-                    .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
-            )
-            finish()
+        if (intent.data?.getQueryParameter("status") == "ok") {
+            Toast.makeText(this, R.string.login_done, Toast.LENGTH_SHORT).show()
         }
+        startActivity(
+            Intent(this, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP),
+        )
+        finish()
     }
 }

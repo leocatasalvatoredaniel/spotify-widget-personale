@@ -46,6 +46,10 @@ class TokenStore(context: Context) {
         get() = prefs.getString(KEY_STATE, null)
         set(value) = prefs.edit { putString(KEY_STATE, value) }
 
+    var pendingRedirect: String?
+        get() = prefs.getString(KEY_REDIRECT, null)
+        set(value) = prefs.edit { putString(KEY_REDIRECT, value) }
+
     private fun key(): SecretKey {
         val keyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
         (keyStore.getEntry(KEY_ALIAS, null) as? KeyStore.SecretKeyEntry)?.let { return it.secretKey }
@@ -84,5 +88,6 @@ class TokenStore(context: Context) {
         const val KEY_TOKENS = "tokens"
         const val KEY_VERIFIER = "verifier"
         const val KEY_STATE = "state"
+        const val KEY_REDIRECT = "redirect"
     }
 }

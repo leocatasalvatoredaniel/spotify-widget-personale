@@ -50,6 +50,8 @@
     <!-- Login and playback -->
     <string name="login_failed">Accesso a Spotify non riuscito: %1$s</string>
     <string name="login_done">Spotify collegato</string>
+    <string name="login_failed_title">Accesso non riuscito</string>
+    <string name="login_back">Torna a Widget Musica</string>
     <string name="play_failed">Impossibile avviare la riproduzione: %1$s</string>
     <string name="play_premium_required">Spotify Premium richiesto per avviare la riproduzione dal widget</string>
     <string name="play_login_required">Collega Spotify nell\'app Widget Musica</string>
