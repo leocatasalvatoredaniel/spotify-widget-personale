@@ -24,7 +24,7 @@ data class PlayerMetrics(
         private const val OUTPUT_ROW = 24 + 4
         private const val TITLE_ROW = 22
         private const val MIN_GAP = 6
-        // The track is 4 dp, the thumb on it 16 dp
+        // The track is 4.5 dp and the thumb on it 16 dp; its glow may overflow
         private const val PROGRESS = 16
         private const val TIMES_ROW = 16
         private const val CONTROLS = 48

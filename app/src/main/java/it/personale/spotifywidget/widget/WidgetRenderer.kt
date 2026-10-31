@@ -77,10 +77,16 @@ object WidgetRenderer {
         options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT),
     )
 
-    /** The played part and the thumb, whose white ring is the secondary progress */
+    /**
+     * Moves the three layers of the progress together: the played part with
+     * its glow, the thumb with its ring and the rest of the track
+     */
     private fun RemoteViews.setProgress(progress: Int) {
         setProgressBar(R.id.progress, PROGRESS_MAX, progress, false)
         setInt(R.id.progress, "setSecondaryProgress", progress)
+        setProgressBar(R.id.progress_thumb, PROGRESS_MAX, progress, false)
+        setInt(R.id.progress_thumb, "setSecondaryProgress", progress)
+        setProgressBar(R.id.progress_track, PROGRESS_MAX, PROGRESS_MAX - progress, false)
     }
 
     private fun build(context: Context, data: WidgetData, options: Bundle): RemoteViews {
@@ -129,11 +135,11 @@ object WidgetRenderer {
         val position = nowPlaying.positionAt(System.currentTimeMillis())
         views.setProgress(progressWithThumb(position, nowPlaying.durationMs, metrics.progressWidthDp))
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            views.setColorStateList(
-                R.id.progress,
-                "setProgressTintList",
-                ColorStateList.valueOf(nowPlaying.accent ?: WidgetColors.NEUTRAL),
-            )
+            // Played part, glow and center of the thumb; the ring stays white
+            val accent = ColorStateList.valueOf(nowPlaying.accent ?: WidgetColors.NEUTRAL)
+            views.setColorStateList(R.id.progress, "setProgressTintList", accent)
+            views.setColorStateList(R.id.progress, "setSecondaryProgressTintList", accent)
+            views.setColorStateList(R.id.progress_thumb, "setProgressTintList", accent)
         }
         views.setViewVisibility(
             R.id.times,

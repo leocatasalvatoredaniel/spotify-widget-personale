@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Thumb of the progress: a white ring (secondary progress, never tinted)
+     around a dot in the color of the cover (progress, tinted) -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@android:id/secondaryProgress">
+        <scale
+            android:scaleGravity="start|center_vertical"
+            android:scaleWidth="100%">
+            <layer-list>
+                <item
+                    android:gravity="end|center_vertical"
+                    android:width="@dimen/progress_thumb"
+                    android:height="@dimen/progress_thumb">
+                    <shape android:shape="oval">
+                        <solid android:color="@android:color/white" />
+                    </shape>
+                </item>
+            </layer-list>
+        </scale>
+    </item>
+
+    <item android:id="@android:id/progress">
+        <scale
+            android:scaleGravity="start|center_vertical"
+            android:scaleWidth="100%">
+            <layer-list>
+                <item
+                    android:gravity="end|center_vertical"
+                    android:width="@dimen/progress_thumb_dot"
+                    android:height="@dimen/progress_thumb_dot"
+                    android:right="@dimen/progress_thumb_ring">
+                    <shape android:shape="oval">
+                        <solid android:color="@android:color/white" />
+                    </shape>
+                </item>
+            </layer-list>
+        </scale>
+    </item>
+</layer-list>

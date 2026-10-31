@@ -1,20 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Progress as in the media player of One UI: a light track, the played part
-     in the color of the cover (tinted from Android 12) and a round thumb with
-     a white ring. The thumb is the end of the scaled layers: the renderer
-     shifts the progress by its width so that it never leaves the track. -->
+<!-- Played part of the progress, as in the media player of One UI: the bar
+     (ending under the thumb) and the glow around the thumb, both tinted with
+     the color of the cover. The thumb itself is widget_progress_thumb, the
+     rest of the track widget_progress_track. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item
-        android:id="@android:id/background"
-        android:gravity="center_vertical|fill_horizontal"
-        android:height="4dp">
-        <shape>
-            <corners android:radius="2dp" />
-            <solid android:color="#73FFFFFF" />
-        </shape>
-    </item>
-
-    <!-- White ring of the thumb, moved with the progress (secondary progress) -->
+    <!-- Glow around the thumb (secondary progress, same value) -->
     <item android:id="@android:id/secondaryProgress">
         <scale
             android:scaleGravity="start|center_vertical"
@@ -22,17 +12,22 @@
             <layer-list>
                 <item
                     android:gravity="end|center_vertical"
-                    android:width="16dp"
-                    android:height="16dp">
+                    android:width="@dimen/progress_glow"
+                    android:height="@dimen/progress_glow"
+                    android:right="@dimen/progress_glow_overhang">
                     <shape android:shape="oval">
-                        <solid android:color="@android:color/white" />
+                        <gradient
+                            android:centerColor="#99FFFFFF"
+                            android:endColor="#00FFFFFF"
+                            android:gradientRadius="@dimen/progress_glow_radius"
+                            android:startColor="#FFFFFFFF"
+                            android:type="radial" />
                     </shape>
                 </item>
             </layer-list>
         </scale>
     </item>
 
-    <!-- Played part and center of the thumb, in the color of the cover -->
     <item android:id="@android:id/progress">
         <scale
             android:scaleGravity="start|center_vertical"
@@ -40,19 +35,10 @@
             <layer-list>
                 <item
                     android:gravity="center_vertical|fill_horizontal"
-                    android:height="4dp"
-                    android:right="8dp">
+                    android:height="@dimen/progress_track"
+                    android:right="@dimen/progress_thumb_radius">
                     <shape>
-                        <corners android:radius="2dp" />
-                        <solid android:color="@android:color/white" />
-                    </shape>
-                </item>
-                <item
-                    android:gravity="end|center_vertical"
-                    android:width="10dp"
-                    android:height="10dp"
-                    android:right="3dp">
-                    <shape android:shape="oval">
+                        <corners android:radius="@dimen/progress_track_radius" />
                         <solid android:color="@android:color/white" />
                     </shape>
                 </item>
