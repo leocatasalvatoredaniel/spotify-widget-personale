@@ -1,33 +1,26 @@
 package it.personale.spotifywidget.ui
 
+import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -40,12 +33,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import it.personale.spotifywidget.R
 import it.personale.spotifywidget.playback.Playback
+import it.personale.spotifywidget.widget.SpotifyWidgetReceiver
 import it.personale.spotifywidget.widget.WidgetRenderer
 import kotlinx.coroutines.launch
 
 /**
- * Settings: access to the media sessions and the widget. Also opened by the
- * launcher when the widget is edited.
+ * Settings, drawn as a page of One UI 9. Also opened by the launcher when
+ * the widget is edited.
  */
 class MainActivity : ComponentActivity() {
     /** Changes every time the screen comes back, e.g. from the system settings */
@@ -63,11 +57,7 @@ class MainActivity : ComponentActivity() {
             setResult(RESULT_OK, Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId))
         }
         setContent {
-            MaterialTheme(colorScheme = colorScheme(this, isSystemInDarkTheme())) {
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    SettingsScreen(resumes)
-                }
-            }
+            OneUiTheme { SettingsScreen(resumes) }
         }
     }
 
@@ -79,56 +69,85 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private fun colorScheme(context: Context, dark: Boolean): ColorScheme = when {
-    Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
-        if (dark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-    dark -> darkColorScheme()
-    else -> lightColorScheme()
-}
-
 @Composable
 private fun SettingsScreen(resumes: Int) {
+    val context = LocalContext.current
+    val hasAccess = remember(resumes) { Playback.hasAccess(context) }
+    val output = remember(resumes) { Playback.outputSwitcher(context) }
+    val samsungActivities = remember(resumes) { Playback.samsungMediaActivities(context) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .safeDrawingPadding()
+            .background(LocalOneUi.current.background)
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+            .statusBarsPadding()
+            .navigationBarsPadding(),
     ) {
-        Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineMedium)
-        Text(stringResource(R.string.settings_intro), style = MaterialTheme.typography.bodyMedium)
-        AccessCard(resumes)
-        WidgetCard()
+        OneUiTitle(stringResource(R.string.settings_title))
+
+        OneUiCard(
+            listOf {
+                OneUiRow(
+                    title = stringResource(R.string.access_title),
+                    checked = hasAccess,
+                    onClick = { open(context, notificationAccessIntent(context)) },
+                )
+            },
+        )
+        OneUiFooter(stringResource(R.string.access_explanation))
+
+        OneUiSectionHeader(stringResource(R.string.widget_title))
+        OneUiCard(
+            listOf(
+                {
+                    OneUiRow(
+                        title = stringResource(R.string.widget_add),
+                        summary = stringResource(R.string.widget_add_summary),
+                        onClick = { pinWidget(context) },
+                    )
+                },
+                {
+                    OneUiRow(
+                        title = stringResource(R.string.output_title),
+                        summary = stringResource(
+                            when (output.kind) {
+                                Playback.OutputSwitcher.Kind.SAMSUNG -> R.string.output_samsung
+                                Playback.OutputSwitcher.Kind.ANDROID -> R.string.output_android
+                                Playback.OutputSwitcher.Kind.SPOTIFY -> R.string.output_spotify
+                            },
+                        ),
+                        summaryIsValue = true,
+                        onClick = { openOutputSwitcher(context, output) },
+                    )
+                },
+            ),
+        )
+        if (samsungActivities != null && output.kind != Playback.OutputSwitcher.Kind.SAMSUNG) {
+            OneUiFooter(
+                stringResource(R.string.output_samsung_activities, samsungActivities.joinToString().ifEmpty { "–" }),
+            )
+        }
+
+        OneUiSectionHeader(stringResource(R.string.spotify_title))
+        OneUiCard(
+            listOf {
+                OneUiRow(
+                    title = stringResource(R.string.liked_title),
+                    summary = stringResource(R.string.liked_summary),
+                    onClick = { Playback.likedSongsIntent(context)?.let { open(context, it) } },
+                )
+            },
+        )
+        Spacer(modifier = Modifier.height(32.dp))
     }
 }
 
-@Composable
-private fun SettingsCard(title: String, content: @Composable () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(title, style = MaterialTheme.typography.titleMedium)
-            content()
-        }
-    }
-}
-
-@Composable
-private fun AccessCard(resumes: Int) {
-    val context = LocalContext.current
-    val hasAccess = remember(resumes) { Playback.hasAccess(context) }
-    SettingsCard(stringResource(R.string.access_title)) {
-        Text(stringResource(R.string.access_explanation), style = MaterialTheme.typography.bodyMedium)
-        if (hasAccess) {
-            Text(stringResource(R.string.access_granted), color = MaterialTheme.colorScheme.primary)
-        } else {
-            Button(onClick = { context.startActivity(notificationAccessIntent(context)) }) {
-                Text(stringResource(R.string.access_grant))
-            }
-        }
+private fun open(context: Context, intent: Intent) {
+    try {
+        context.startActivity(intent)
+    } catch (error: ActivityNotFoundException) {
+        Toast.makeText(context, R.string.open_failed, Toast.LENGTH_SHORT).show()
     }
 }
 
@@ -142,39 +161,25 @@ private fun notificationAccessIntent(context: Context): Intent =
         Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)
     }
 
-@Composable
-private fun WidgetCard() {
-    val context = LocalContext.current
+/** The launcher asks where to put the widget; a toast confirms it once added */
+private fun pinWidget(context: Context) {
     val manager = AppWidgetManager.getInstance(context)
-    SettingsCard(stringResource(R.string.widget_title)) {
-        if (manager.isRequestPinAppWidgetSupported) {
-            Button(onClick = {
-                manager.requestPinAppWidget(WidgetRenderer.component(context), null, null)
-            }) { Text(stringResource(R.string.widget_add)) }
-        }
-        Text(stringResource(R.string.widget_hint), style = MaterialTheme.typography.bodySmall)
-        OutputDiagnostics()
-    }
+    // The launcher adds the id of the new widget to this intent: it must be mutable
+    val added = PendingIntent.getBroadcast(
+        context,
+        0,
+        Intent(context, SpotifyWidgetReceiver::class.java).setAction(SpotifyWidgetReceiver.ACTION_PINNED),
+        PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+    )
+    val asked = manager.isRequestPinAppWidgetSupported &&
+        manager.requestPinAppWidget(WidgetRenderer.component(context), null, added)
+    if (!asked) Toast.makeText(context, R.string.widget_pin_unsupported, Toast.LENGTH_LONG).show()
 }
 
-/** Which panel the output button opens on this phone, to report it if it is wrong */
-@Composable
-private fun OutputDiagnostics() {
-    val context = LocalContext.current
-    val kind = remember { Playback.outputSwitcher(context).kind }
-    val samsung = remember { Playback.samsungMediaActivities(context) }
-    val target = stringResource(
-        when (kind) {
-            Playback.OutputSwitcher.Kind.SAMSUNG -> R.string.output_samsung
-            Playback.OutputSwitcher.Kind.ANDROID -> R.string.output_android
-            Playback.OutputSwitcher.Kind.SPOTIFY -> R.string.output_spotify
-        },
-    )
-    Text(stringResource(R.string.output_target, target), style = MaterialTheme.typography.bodySmall)
-    if (samsung != null && kind != Playback.OutputSwitcher.Kind.SAMSUNG) {
-        Text(
-            stringResource(R.string.output_samsung_activities, samsung.joinToString().ifEmpty { "–" }),
-            style = MaterialTheme.typography.bodySmall,
-        )
+/** The same panel as the output button of the widget, to try it from here */
+private fun openOutputSwitcher(context: Context, output: Playback.OutputSwitcher) {
+    when (output) {
+        is Playback.OutputSwitcher.Activity -> output.intent?.let { open(context, it) }
+        is Playback.OutputSwitcher.Broadcast -> context.sendBroadcast(output.intent)
     }
 }

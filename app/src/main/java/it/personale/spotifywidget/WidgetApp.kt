@@ -28,6 +28,10 @@ class WidgetApp : Application() {
     @Volatile
     var playRequestedAt: Long = 0
 
+    /** Button of Spotify just pressed in the widget: confirmed when Spotify changes it */
+    @Volatile
+    var pressedAction: PressedAction? = null
+
     override fun onCreate() {
         super.onCreate()
         scope.launch(Dispatchers.IO) { removeOldData() }
@@ -47,3 +51,5 @@ class WidgetApp : Application() {
 }
 
 val Context.app: WidgetApp get() = applicationContext as WidgetApp
+
+data class PressedAction(val action: String, val name: String, val icon: Int, val at: Long)

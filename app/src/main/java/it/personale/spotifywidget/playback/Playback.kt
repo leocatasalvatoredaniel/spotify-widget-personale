@@ -13,6 +13,7 @@ import android.media.session.PlaybackState
 import android.os.Build
 import android.os.SystemClock
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.net.toUri
 import it.personale.spotifywidget.R
 
 /**
@@ -60,15 +61,25 @@ object Playback {
     fun previous(context: Context): Boolean =
         spotifyController(context)?.transportControls?.skipToPrevious() != null
 
-    /** Presses a button of Spotify, as the media player of the system does */
-    fun customAction(context: Context, action: String?): Boolean {
-        val controller = spotifyController(context) ?: return false
+    /** Presses a button of Spotify, as the media player of the system does: the button, if found */
+    fun customAction(context: Context, action: String?): PlaybackState.CustomAction? {
+        val controller = spotifyController(context) ?: return null
         val custom = controller.playbackState?.customActions
             ?.firstOrNull { it.action == action }
-            ?: return false
+            ?: return null
         controller.transportControls.sendCustomAction(custom, custom.extras)
-        return true
+        return custom
     }
+
+    /** Liked Songs in Spotify, where its + button saves the tracks */
+    fun likedSongsIntent(context: Context): Intent? {
+        val liked = Intent(Intent.ACTION_VIEW, LIKED_SONGS_URI.toUri())
+            .setPackage(SPOTIFY_PACKAGE)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        return if (liked.resolveActivity(context.packageManager) != null) liked else spotifyLaunchIntent(context)
+    }
+
+    private const val LIKED_SONGS_URI = "spotify:collection:tracks"
 
     /** Opens Spotify, or null if it is not installed */
     fun spotifyLaunchIntent(context: Context): Intent? =

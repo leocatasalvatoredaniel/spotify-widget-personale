@@ -40,9 +40,16 @@ Quindi:
 
 ## Primo avvio
 
+L'app ha l'aspetto delle Impostazioni di One UI 9.
+
 1. Apri **Widget Musica**.
-2. **Accesso alle notifiche** → *Concedi l'accesso* → attiva *Widget Musica*.
-3. **Widget** → *Aggiungi alla schermata Home*, oppure tieni premuto sulla schermata Home → *Widget* → *Widget Musica*.
+2. Tocca **Accesso alle notifiche** e attiva *Widget Musica*.
+3. Tocca **Aggiungi alla schermata Home**: One UI chiede dove metterlo e, una volta aggiunto, compare *Widget aggiunto alla schermata Home*. In alternativa tieni premuto sulla schermata Home → *Widget* → *Widget Musica*.
+
+Nell'app trovi anche:
+
+- **Pulsante di uscita**: quale pannello apre il pulsante del widget; toccandolo lo provi;
+- **Brani che ti piacciono**: apre in Spotify la playlist dove il **+** del widget salva i brani.
 
 ## Il widget
 
@@ -50,7 +57,7 @@ Quindi:
 | --- | --- |
 | copertina, titolo | apre Spotify |
 | dispositivo o icona ▷) in alto a destra | cambia uscita audio (vedi limiti) |
-| shuffle, + | le stesse funzioni dei pulsanti di Spotify nel player del sistema |
+| shuffle, + | le stesse funzioni dei pulsanti di Spotify nel player del sistema. Il + salva il brano in *Brani che ti piacciono* (La tua libreria): diventa ✓ e compare la conferma |
 | ⏮ ▶/⏸ ⏭ | comandi di riproduzione |
 
 Con un widget basso (meno di 2 righe) spariscono prima il dispositivo, poi i tempi.

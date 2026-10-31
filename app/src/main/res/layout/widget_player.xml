@@ -58,20 +58,29 @@
                 android:tint="@color/widget_text" />
         </LinearLayout>
 
+        <!-- Spotify icon, then title • artist: centered, scrolling when it does not fit -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="22dp"
             android:layout_marginTop="4dp"
-            android:gravity="center_vertical"
+            android:layout_marginEnd="4dp"
+            android:gravity="center"
             android:orientation="horizontal"
             tools:ignore="UseCompoundDrawables">
 
-            <!-- Title • artist, scrolling when it does not fit -->
+            <ImageView
+                android:id="@+id/app_icon"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_marginEnd="6dp"
+                android:importantForAccessibility="no"
+                android:tint="@color/widget_text"
+                android:visibility="gone" />
+
             <TextView
                 android:id="@+id/title"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:ellipsize="marquee"
                 android:focusable="true"
                 android:focusableInTouchMode="true"
@@ -84,16 +93,6 @@
 
                 <requestFocus />
             </TextView>
-
-            <ImageView
-                android:id="@+id/app_icon"
-                android:layout_width="14dp"
-                android:layout_height="14dp"
-                android:layout_marginStart="10dp"
-                android:layout_marginEnd="4dp"
-                android:importantForAccessibility="no"
-                android:tint="@color/widget_icon_secondary"
-                android:visibility="gone" />
         </LinearLayout>
 
         <!-- Extra height goes here, as in the system player -->

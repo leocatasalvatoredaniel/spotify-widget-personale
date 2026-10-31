@@ -5,6 +5,10 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.os.SystemClock
+import android.widget.Toast
+import it.personale.spotifywidget.PressedAction
+import it.personale.spotifywidget.R
 import it.personale.spotifywidget.app
 import it.personale.spotifywidget.playback.Playback
 import kotlinx.coroutines.launch
@@ -34,10 +38,28 @@ class SpotifyWidgetReceiver : AppWidgetProvider() {
             WidgetRenderer.ACTION_PLAY_PAUSE -> if (!Playback.playPause(context)) renderAsync(context, null)
             WidgetRenderer.ACTION_PREVIOUS -> Playback.previous(context)
             WidgetRenderer.ACTION_NEXT -> Playback.next(context)
-            WidgetRenderer.ACTION_CUSTOM ->
-                Playback.customAction(context, intent.getStringExtra(WidgetRenderer.EXTRA_CUSTOM_ACTION))
+            WidgetRenderer.ACTION_CUSTOM -> {
+                val pressed = Playback.customAction(context, intent.getStringExtra(WidgetRenderer.EXTRA_CUSTOM_ACTION))
+                if (pressed != null) {
+                    context.app.pressedAction = PressedAction(
+                        action = pressed.action,
+                        name = pressed.name?.toString().orEmpty(),
+                        icon = pressed.icon,
+                        at = SystemClock.elapsedRealtime(),
+                    )
+                }
+            }
+            ACTION_PINNED -> {
+                Toast.makeText(context, R.string.widget_pinned, Toast.LENGTH_SHORT).show()
+                renderAsync(context, null)
+            }
             else -> super.onReceive(context, intent)
         }
+    }
+
+    companion object {
+        /** The launcher added the widget asked by the app */
+        const val ACTION_PINNED = "it.personale.spotifywidget.PINNED"
     }
 
     private fun renderAsync(context: Context, ids: IntArray?) {

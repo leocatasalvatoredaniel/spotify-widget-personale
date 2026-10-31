@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.WidgetMusica" parent="android:Theme.Material.NoActionBar" />
+    <!-- The page of One UI shows at once, without a dark flash at the start -->
+    <style name="Theme.WidgetMusica" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/page_background</item>
+    </style>
 
     <style name="Theme.WidgetMusica.Translucent" parent="android:Theme.Translucent.NoTitleBar" />
 </resources>

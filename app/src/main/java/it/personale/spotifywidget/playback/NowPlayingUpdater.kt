@@ -3,15 +3,19 @@ package it.personale.spotifywidget.playback
 import android.graphics.Bitmap
 import android.media.MediaMetadata
 import android.media.session.MediaController
+import android.os.SystemClock
+import android.widget.Toast
 import androidx.palette.graphics.Palette
 import it.personale.spotifywidget.WidgetApp
 import it.personale.spotifywidget.data.NowPlaying
 import it.personale.spotifywidget.data.SessionAction
 import it.personale.spotifywidget.widget.WidgetColors
 import it.personale.spotifywidget.widget.WidgetRenderer
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
 /**
@@ -71,6 +75,28 @@ class NowPlayingUpdater(private val app: WidgetApp) {
         app.store.update { it.copy(nowPlaying = nowPlaying) }
         if (!keepArt) app.images.keepOnly(setOfNotNull(artPath))
         WidgetRenderer.renderAll(app)
+        confirmPressedAction(nowPlaying)
+    }
+
+    /**
+     * A button of Spotify pressed in the widget changed (e.g. + became ✓):
+     * say what happened, as the widget alone does not show where the track went
+     */
+    private suspend fun confirmPressedAction(nowPlaying: NowPlaying) {
+        val pressed = app.pressedAction ?: return
+        if (SystemClock.elapsedRealtime() - pressed.at > CONFIRM_WITHIN_MS) {
+            app.pressedAction = null
+            return
+        }
+        val unchanged = nowPlaying.actions.any {
+            it.action == pressed.action && it.icon == pressed.icon && it.name == pressed.name
+        }
+        if (unchanged) return
+        app.pressedAction = null
+        val text = confirmationFor(pressed.name) ?: return
+        withContext(Dispatchers.Main) {
+            Toast.makeText(app, text, Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun coverOf(metadata: MediaMetadata): Bitmap? =
@@ -87,5 +113,6 @@ class NowPlayingUpdater(private val app: WidgetApp) {
 
     private companion object {
         const val DEBOUNCE_MS = 300L
+        const val CONFIRM_WITHIN_MS = 5_000L
     }
 }

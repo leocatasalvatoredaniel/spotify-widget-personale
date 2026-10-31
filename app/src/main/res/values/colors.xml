@@ -2,11 +2,13 @@
 <resources>
     <color name="launcher_background">#FF1E3A2F</color>
 
+    <!-- Background of the pages of One UI 9 -->
+    <color name="page_background">#FFF3F3F5</color>
+
     <!-- Widget: white text on the cover darkened by the scrim. At 60% even a
          white cover keeps the text above 4.5:1 -->
     <color name="widget_background">#FF22272A</color>
     <color name="widget_scrim">#99000000</color>
     <color name="widget_text">#FFFFFFFF</color>
     <color name="widget_text_secondary">#D9FFFFFF</color>
-    <color name="widget_icon_secondary">#B3FFFFFF</color>
 </resources>

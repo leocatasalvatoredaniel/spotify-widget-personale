@@ -20,17 +20,20 @@
 
     <!-- Settings -->
     <string name="settings_title">Widget Musica</string>
-    <string name="settings_intro">Un widget per Spotify uguale al player del sistema: copertina, dispositivo, avanzamento, shuffle, Mi piace e comandi.</string>
     <string name="access_title">Accesso alle notifiche</string>
     <string name="access_explanation">Serve per vedere in tempo reale cosa suona Spotify e per i comandi, come fa il player del sistema. Delle notifiche l\'app legge solo l\'icona di Spotify: non legge né salva il loro contenuto.</string>
-    <string name="access_granted">Accesso concesso</string>
-    <string name="access_grant">Concedi l\'accesso</string>
     <string name="widget_title">Widget</string>
     <string name="widget_add">Aggiungi alla schermata Home</string>
-    <string name="output_target">Il pulsante di uscita del widget apre: %1$s.</string>
-    <string name="output_samsung">il pannello multimediale di Samsung</string>
-    <string name="output_android">il pannello di uscita di Android</string>
+    <string name="widget_add_summary">Misura consigliata 4×2</string>
+    <string name="widget_pinned">Widget aggiunto alla schermata Home</string>
+    <string name="widget_pin_unsupported">Tieni premuto su uno spazio vuoto della schermata Home → Widget → Widget Musica</string>
+    <string name="output_title">Pulsante di uscita</string>
+    <string name="output_samsung">Pannello multimediale Samsung</string>
+    <string name="output_android">Pannello di uscita di Android</string>
     <string name="output_spotify">Spotify</string>
-    <string name="output_samsung_activities">Schermate apribili di «Media and devices»: %1$s</string>
-    <string name="widget_hint">Puoi anche tenere premuto sulla schermata Home → Widget → Widget Musica. La misura consigliata è 4×2.</string>
+    <string name="output_samsung_activities">Schermate di «Media and devices» apribili da altre app: %1$s</string>
+    <string name="spotify_title">Spotify</string>
+    <string name="liked_title">Brani che ti piacciono</string>
+    <string name="liked_summary">Il pulsante + del widget salva qui il brano in ascolto</string>
+    <string name="open_failed">Impossibile aprire la schermata</string>
 </resources>
