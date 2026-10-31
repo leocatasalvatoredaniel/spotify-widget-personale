@@ -11,9 +11,10 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /**
- * Moves the progress bar and the time once a second while Spotify plays and
- * the screen is on. Only these two values are sent to the launcher, not the
- * whole widget.
+ * Moves the progress bar and the time while Spotify plays and the screen is
+ * on: the bar a pixel at a time, as smooth as the one of the system player
+ * (widgets cannot animate it), the time at each second. Only these two values
+ * are sent to the launcher, not the whole widget.
  */
 class ProgressTicker(private val app: WidgetApp) {
     private var job: Job? = null
@@ -29,8 +30,10 @@ class ProgressTicker(private val app: WidgetApp) {
                 if (duration <= 0) break
                 val position = Playback.positionNow(state).coerceIn(0, duration)
                 WidgetRenderer.renderProgress(app, position, duration)
-                // Just after the next whole second, as the time on screen changes
-                delay(SECOND - position % SECOND + 20)
+                // When the thumb has moved a pixel, or just after the next whole
+                // second, as the time on screen changes
+                val step = WidgetRenderer.progressStep(app, duration)
+                delay(minOf(step, SECOND - position % SECOND + 20))
             }
         }
     }

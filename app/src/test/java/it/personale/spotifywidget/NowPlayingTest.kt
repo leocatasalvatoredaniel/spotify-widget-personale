@@ -4,6 +4,7 @@ import it.personale.spotifywidget.data.NowPlaying
 import it.personale.spotifywidget.data.SessionAction
 import it.personale.spotifywidget.data.formatTime
 import it.personale.spotifywidget.data.progressOf
+import it.personale.spotifywidget.data.progressStepMs
 import it.personale.spotifywidget.data.progressWithThumb
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -61,17 +62,27 @@ class NowPlayingTest {
 
     @Test
     fun progressOfTheBar() {
-        assertEquals(259, progressOf(49_000, 189_000))
-        assertEquals(1000, progressOf(200_000, 189_000))
+        assertEquals(2592, progressOf(49_000, 189_000))
+        assertEquals(10_000, progressOf(200_000, 189_000))
         assertEquals(0, progressOf(5_000, 0))
     }
 
     @Test
     fun thumbStaysOnTheTrack() {
         // 320 dp bar, 16 dp thumb: the thumb starts one thumb in and ends at the end
-        assertEquals(50, progressWithThumb(0, 189_000, 320f))
-        assertEquals(1000, progressWithThumb(189_000, 189_000, 320f))
-        assertEquals(525, progressWithThumb(94_500, 189_000, 320f))
+        assertEquals(500, progressWithThumb(0, 189_000, 320f))
+        assertEquals(10_000, progressWithThumb(189_000, 189_000, 320f))
+        assertEquals(5250, progressWithThumb(94_500, 189_000, 320f))
         assertEquals(0, progressWithThumb(5_000, 0, 320f))
+    }
+
+    @Test
+    fun theBarMovesAPixelAtATime() {
+        // 3:24 on the bar of the widget on the phone (815 px, thumb 45 px): about 4 times a second
+        assertEquals(264, progressStepMs(204_000, 815f, 45f))
+        // A short track does not go beyond 10 times a second, a long one not below once
+        assertEquals(100, progressStepMs(30_000, 815f, 45f))
+        assertEquals(1000, progressStepMs(3_600_000, 815f, 45f))
+        assertEquals(1000, progressStepMs(0, 815f, 45f))
     }
 }

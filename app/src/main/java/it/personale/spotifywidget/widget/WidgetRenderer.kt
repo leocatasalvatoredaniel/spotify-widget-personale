@@ -28,6 +28,8 @@ import it.personale.spotifywidget.data.PROGRESS_MAX
 import it.personale.spotifywidget.data.WidgetBackground
 import it.personale.spotifywidget.data.WidgetState
 import it.personale.spotifywidget.data.formatTime
+import it.personale.spotifywidget.data.THUMB_DP
+import it.personale.spotifywidget.data.progressStepMs
 import it.personale.spotifywidget.data.progressWithThumb
 import it.personale.spotifywidget.playback.Playback
 import it.personale.spotifywidget.ui.LaunchSpotifyActivity
@@ -48,6 +50,13 @@ object WidgetRenderer {
     @Volatile
     private var drawn = false
 
+    /**
+     * Width (dp) of the bar of each widget, kept by the whole drawings: the
+     * bar moves several times a second, without asking the system each time
+     */
+    @Volatile
+    private var progressWidths: Map<Int, Float?> = emptyMap()
+
     fun component(context: Context) = ComponentName(context, SpotifyWidgetReceiver::class.java)
 
     suspend fun renderAll(context: Context) = render(context, null)
@@ -58,25 +67,40 @@ object WidgetRenderer {
         val targets = ids ?: manager.getAppWidgetIds(component(context))
         if (targets.isEmpty()) return@withLock
         val data = WidgetData.load(context)
+        // The widgets on the screen now, for the progress bar
+        val all = manager.getAppWidgetIds(component(context))
+        progressWidths = all.associateWith { progressWidths[it] }.toMutableMap().apply {
+            targets.forEach { put(it, metricsOf(manager.getAppWidgetOptions(it)).progressWidthDp) }
+        }
         targets.forEach { id ->
             manager.updateAppWidget(id, build(context, data, id, manager.getAppWidgetOptions(id)))
         }
         drawn = true
     }
 
-    /** Moves only the progress bar and the time, once a second while playing */
+    /**
+     * Moves only the progress bar and the time while playing, a pixel at a
+     * time (see [progressStepMs])
+     */
     fun renderProgress(context: Context, position: Long, duration: Long) {
         if (!drawn) return
         val manager = AppWidgetManager.getInstance(context)
+        val time = inFont(formatTime(position), context.app.systemFont?.family)
         // Each widget has its own width, so its own position of the thumb
-        manager.getAppWidgetIds(component(context)).forEach { id ->
-            val metrics = metricsOf(manager.getAppWidgetOptions(id))
+        progressWidths.forEach { (id, width) ->
             val views = RemoteViews(context.packageName, R.layout.widget_player).apply {
-                setProgress(progressWithThumb(position, duration, metrics.progressWidthDp))
-                setTextViewText(R.id.elapsed, inFont(formatTime(position), context.app.systemFont?.family))
+                setProgress(progressWithThumb(position, duration, width))
+                setTextViewText(R.id.elapsed, time)
             }
             manager.partiallyUpdateAppWidget(id, views)
         }
+    }
+
+    /** How often the bar moves one pixel on the widest widget (ms) */
+    fun progressStep(context: Context, duration: Long): Long {
+        val density = context.resources.displayMetrics.density
+        val widest = progressWidths.values.maxOfOrNull { it ?: DEFAULT_BAR_DP } ?: DEFAULT_BAR_DP
+        return progressStepMs(duration, widest * density, THUMB_DP * density)
     }
 
     /**
@@ -352,6 +376,7 @@ object WidgetRenderer {
     fun widgetUri(id: Int): Uri = Uri.fromParts("widget", id.toString(), null)
 
     // Size of the player when the launcher does not report it
+    private const val DEFAULT_BAR_DP = 290f
     private const val DEFAULT_WIDTH_DP = 360
     private const val DEFAULT_HEIGHT_DP = 160
 

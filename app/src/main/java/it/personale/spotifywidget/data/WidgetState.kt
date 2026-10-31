@@ -129,7 +129,8 @@ fun formatTime(millis: Long): String {
 /** Current rule of the color of the progress bar, as One UI picks it */
 const val ACCENT_RULE = 3
 
-const val PROGRESS_MAX = 1000
+/** Steps of the bar: finer than its pixels, so that it can move one pixel at a time */
+const val PROGRESS_MAX = 10_000
 
 /** Progress of the bar, from 0 to [PROGRESS_MAX] */
 fun progressOf(position: Long, duration: Long): Int =
@@ -152,3 +153,18 @@ fun progressWithThumb(position: Long, duration: Long, barWidthDp: Float?): Int {
 
 // The thumb on the bar of a 4×2 widget
 private const val DEFAULT_THUMB_FRACTION = 0.05f
+
+/**
+ * Time (ms) for the thumb to move one pixel on a bar [barWidthPx] wide with
+ * a thumb [thumbPx] wide: the bar is drawn again as often, so that it moves
+ * smoothly as the one of the system player instead of a step a second.
+ * At most 10 times a second, at least once.
+ */
+fun progressStepMs(durationMs: Long, barWidthPx: Float, thumbPx: Float): Long {
+    val travel = barWidthPx - thumbPx
+    if (durationMs <= 0 || travel <= 0) return MAX_STEP_MS
+    return (durationMs / travel).toLong().coerceIn(MIN_STEP_MS, MAX_STEP_MS)
+}
+
+private const val MIN_STEP_MS = 100L
+private const val MAX_STEP_MS = 1000L

@@ -122,8 +122,8 @@
                     style="?android:attr/progressBarStyleHorizontal"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:max="1000"
-                    android:progress="650"
+                    android:max="10000"
+                    android:progress="6500"
                     android:progressDrawable="@drawable/widget_progress_track" />
 
                 <ProgressBar
@@ -131,20 +131,20 @@
                     style="?android:attr/progressBarStyleHorizontal"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:max="1000"
-                    android:progress="350"
+                    android:max="10000"
+                    android:progress="3500"
                     android:progressDrawable="@drawable/widget_progress"
-                    android:secondaryProgress="350" />
+                    android:secondaryProgress="3500" />
 
                 <ProgressBar
                     android:id="@+id/progress_thumb"
                     style="?android:attr/progressBarStyleHorizontal"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:max="1000"
-                    android:progress="350"
+                    android:max="10000"
+                    android:progress="3500"
                     android:progressDrawable="@drawable/widget_progress_thumb"
-                    android:secondaryProgress="350" />
+                    android:secondaryProgress="3500" />
             </FrameLayout>
 
             <LinearLayout
