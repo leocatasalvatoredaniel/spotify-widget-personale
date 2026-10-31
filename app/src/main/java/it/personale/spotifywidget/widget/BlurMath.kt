@@ -6,11 +6,11 @@ import kotlin.math.roundToInt
 
 /**
  * The background of the Samsung widgets, measured on the Home screen of a
- * Galaxy S24 Ultra next to a Samsung widget at 50% on the same wallpaper:
- * the wallpaper blurred (Gaussian, about 17 dp), its colors 2.77 times
- * stronger around the lightness of each point, then the veil of the widget.
- * With the veil at 50% (58.5% of gray 18, see [WidgetColors.veil]) the
- * result differs from the Samsung widget by 4.5/255 per point (rms).
+ * Galaxy S24 Ultra next to a Samsung widget at 50%, dark and light, on the
+ * same wallpaper: the wallpaper blurred (Gaussian, about 17 dp), its colors
+ * 2.77 times stronger around the lightness of each point, then the veil of
+ * the widget ([WidgetColors.blurVeil]). The model differs from the Samsung
+ * widgets by 3.7/255 per point (rms), the same for dark and light.
  */
 object BlurMath {
     /** Spread of the blur (dp) */

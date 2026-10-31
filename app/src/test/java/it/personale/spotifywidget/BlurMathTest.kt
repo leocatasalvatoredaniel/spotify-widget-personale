@@ -30,19 +30,23 @@ class BlurMathTest {
     }
 
     @Test
-    fun colorsAsTheSamsungWidgetAt50() {
-        // Blurred wallpaper behind the Samsung widget in the screenshot, on average
-        // 74, 64, 52: the widget shows 47, 36, 24 there
-        val veil = WidgetColors.veil(null, dark = true, opacity = 50)
-        val result = BlurMath.samsung(0xFF4A4034.toInt(), veil)
-        assertEquals(47f, channel(result, 16).toFloat(), 3f)
-        assertEquals(36f, channel(result, 8).toFloat(), 3f)
-        assertEquals(24f, channel(result, 0).toFloat(), 3f)
+    fun colorsAsTheSamsungWidgetsAt50() {
+        // Wallpaper behind the Samsung widget in the screenshots, on average 68, 58, 46:
+        // the dark widget shows 48, 37, 25 there, the light one 124, 113, 101
+        val wallpaper = 0xFF443A2E.toInt()
+        val dark = BlurMath.samsung(wallpaper, WidgetColors.blurVeil(dark = true, opacity = 50))
+        assertEquals(48f, channel(dark, 16).toFloat(), 2f)
+        assertEquals(37f, channel(dark, 8).toFloat(), 2f)
+        assertEquals(25f, channel(dark, 0).toFloat(), 2f)
+        val light = BlurMath.samsung(wallpaper, WidgetColors.blurVeil(dark = false, opacity = 50))
+        assertEquals(124f, channel(light, 16).toFloat(), 2f)
+        assertEquals(113f, channel(light, 8).toFloat(), 2f)
+        assertEquals(101f, channel(light, 0).toFloat(), 2f)
     }
 
     @Test
     fun fullOpacityIsPlainBlack() {
-        val veil = WidgetColors.veil(null, dark = true, opacity = 100)
+        val veil = WidgetColors.blurVeil(dark = true, opacity = 100)
         assertEquals(0xFF010101.toInt(), BlurMath.samsung(0xFFC08040.toInt(), veil))
     }
 

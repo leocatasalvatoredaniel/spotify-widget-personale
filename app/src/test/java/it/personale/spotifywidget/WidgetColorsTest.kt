@@ -57,9 +57,31 @@ class WidgetColorsTest {
         assertEquals(28f, hue, 8f)
         assertTrue(saturation > 0.5f)
         assertTrue(lightness < 0.1f)
-        // Light: the color of the wallpaper, very light
-        assertTrue(WidgetColors.hsl(WidgetColors.veil(brown, dark = false, opacity = 0)).third > 0.9f)
-        assertEquals(0xA4, WidgetColors.veil(null, dark = false, opacity = 50) ushr 24)
+        // Light: a light gray, the same cover
+        assertEquals(0x959A9A9A.toInt(), WidgetColors.veil(null, dark = false, opacity = 50))
+        assertEquals(0xFFFCFCFE.toInt(), WidgetColors.veil(brown, dark = false, opacity = 100))
+    }
+
+    @Test
+    fun lightVeilAsTheSamsungWidgetOnTheHomeScreen() {
+        // Wallpaper behind the widgets (average 68, 58, 46): the light Samsung widget
+        // at 50% gives on average 124, 113, 101 there
+        val veil = WidgetColors.veil(0xFF443A2E.toInt(), dark = false, opacity = 50)
+        val alpha = (veil ushr 24) / 255f
+        val behind = listOf(68.1f, 58.5f, 46.2f)
+        val samsung = listOf(124.2f, 112.7f, 100.6f)
+        listOf(16, 8, 0).forEachIndexed { i, shift ->
+            val result = alpha * ((veil shr shift) and 0xFF) + (1 - alpha) * behind[i]
+            assertEquals(samsung[i], result, 2f)
+        }
+    }
+
+    @Test
+    fun blurVeilAsMeasured() {
+        assertEquals(0x790A0F1B, WidgetColors.blurVeil(dark = true, opacity = 50))
+        assertEquals(0x79AAAFBB, WidgetColors.blurVeil(dark = false, opacity = 50))
+        assertEquals(0xFF010101.toInt(), WidgetColors.blurVeil(dark = true, opacity = 100))
+        assertEquals(0x36, WidgetColors.blurVeil(dark = true, opacity = 0) ushr 24)
     }
 
     @Test

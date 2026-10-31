@@ -85,43 +85,46 @@ object WidgetColors {
     }
 
     /**
-     * Veil of the Samsung style. Samsung blurs the wallpaper behind its
-     * widgets, strengthens its colors and darkens it; the widget of an app
-     * can only lay a color over the wallpaper.
-     *
-     * Dark, measured on the Home screen of a Galaxy S24 Ultra, with a Samsung
-     * widget at 50% and this one on the same wallpaper: Samsung keeps 41.5%
-     * of the light of the wallpaper, adds a gray of 11/255 and makes its
-     * colors 2.8 times stronger. A veil that covers 58.5% with a gray of 18
-     * plus the colors of the wallpaper 1.26 times stronger gives the same
-     * average color; only the blur is missing. 29% at opacity 0 and plain
-     * black at 100 are measured on the preview of the Samsung widget settings.
-     *
-     * Light: 29% at 0, 64% at 50 and plain white at 100, measured on the same
-     * preview.
+     * Veil of the Samsung style without blur. Samsung blurs the wallpaper
+     * behind its widgets, strengthens its colors and lays a veil over it
+     * ([blurVeil]); a veil alone over the sharp wallpaper can match the
+     * average color: it covers 58.5% at 50%, with a gray (18 dark, 154
+     * light) plus the colors of the wallpaper 1.26 times stronger. Measured
+     * on the Home screen of a Galaxy S24 Ultra next to a Samsung widget at
+     * 50%, dark and light, on the same wallpaper. 29% at opacity 0 and the
+     * plain color at 100 are measured on the preview of the Samsung widget
+     * settings.
      */
     fun veil(wallpaperColor: Int?, dark: Boolean, opacity: Int): Int {
         val level = opacity.coerceIn(0, 100) / 100f
-        if (!dark) {
-            val alpha = VEIL_MIN + (1 - VEIL_MIN) * level
-            val tinted = wallpaperColor?.let {
-                val (hue, saturation, _) = hsl(it)
-                fromHsl(hue, min(saturation, 0.3f), 0.94f)
-            } ?: VEIL_LIGHT
-            return withAlpha(mix(tinted, VEIL_LIGHT, level), alpha)
-        }
-        val alpha = if (level <= 0.5f) {
-            VEIL_MIN + (VEIL_DARK_HALF - VEIL_MIN) * level * 2
-        } else {
-            VEIL_DARK_HALF + (1 - VEIL_DARK_HALF) * (level - 0.5f) * 2
-        }
-        // The gray and the colors up to 50%, then towards the plain black of 100%
-        return withAlpha(mix(darkTint(wallpaperColor), VEIL_DARK, max(0f, level * 2 - 1)), alpha)
+        val alpha = ramp(level, VEIL_MIN, VEIL_HALF)
+        val tint = tint(if (dark) VEIL_GRAY_DARK else VEIL_GRAY_LIGHT, wallpaperColor)
+        // The gray and the colors up to 50%, then towards the plain color of 100%
+        return withAlpha(mix(tint, if (dark) VEIL_DARK else VEIL_LIGHT, max(0f, level * 2 - 1)), alpha)
     }
 
-    /** Gray of the dark veil plus the colors of the wallpaper, made stronger */
-    private fun darkTint(wallpaperColor: Int?): Int {
-        if (wallpaperColor == null) return gray(VEIL_GRAY)
+    /**
+     * Veil of the Samsung widgets over the wallpaper blurred as theirs
+     * ([BlurMath]). At 50% it covers 47.4%, with a dark blue gray or a light
+     * cool gray: measured on the Home screen, dark and light, where the two
+     * differ only by this color. At 0% the cover is an estimate (21%, in the
+     * proportion measured on the preview of the settings); at 100% the plain
+     * color.
+     */
+    fun blurVeil(dark: Boolean, opacity: Int): Int {
+        val level = opacity.coerceIn(0, 100) / 100f
+        val alpha = ramp(level, BLUR_VEIL_MIN, BLUR_VEIL_HALF)
+        val color = if (dark) BLUR_VEIL_DARK else BLUR_VEIL_LIGHT
+        return withAlpha(mix(color, if (dark) VEIL_DARK else VEIL_LIGHT, max(0f, level * 2 - 1)), alpha)
+    }
+
+    /** [min] at 0, [half] at 0.5, 1 at 1, straight in between */
+    private fun ramp(level: Float, min: Float, half: Float): Float =
+        if (level <= 0.5f) min + (half - min) * level * 2 else half + (1 - half) * (level - 0.5f) * 2
+
+    /** A gray plus the colors of the wallpaper, made stronger */
+    private fun tint(gray: Float, wallpaperColor: Int?): Int {
+        if (wallpaperColor == null) return gray(gray)
         val channels = listOf(16, 8, 0).map { ((wallpaperColor shr it) and 0xFF).toFloat() }
         val luma = 0.2126f * channels[0] + 0.7152f * channels[1] + 0.0722f * channels[2]
         val colors = channels.map { (it - luma) * VEIL_COLORS }
@@ -129,7 +132,7 @@ object WidgetColors {
         // behind the widget: a strong color would turn the veil red or blue
         val largest = colors.maxOf { abs(it) }
         val scale = if (largest > VEIL_MAX_COLOR) VEIL_MAX_COLOR / largest else 1f
-        val (r, g, b) = colors.map { (VEIL_GRAY + it * scale).roundToInt().coerceIn(0, 255) }
+        val (r, g, b) = colors.map { (gray + it * scale).roundToInt().coerceIn(0, 255) }
         return (0xFF shl 24) or (r shl 16) or (g shl 8) or b
     }
 
@@ -152,12 +155,17 @@ object WidgetColors {
     }
 
     private const val VEIL_MIN = 0.29f
-    private const val VEIL_DARK_HALF = 0.585f
-    private const val VEIL_GRAY = 18.3f
+    private const val VEIL_HALF = 0.585f
+    private const val VEIL_GRAY_DARK = 18.3f
+    private const val VEIL_GRAY_LIGHT = 154f
     private const val VEIL_COLORS = 1.26f
     private const val VEIL_MAX_COLOR = 20f
     private const val VEIL_DARK = 0xFF010101.toInt()
     private const val VEIL_LIGHT = 0xFFFCFCFE.toInt()
+    private const val BLUR_VEIL_MIN = 0.213f
+    private const val BLUR_VEIL_HALF = 0.474f
+    private const val BLUR_VEIL_DARK = 0xFF0A0F1B.toInt()
+    private const val BLUR_VEIL_LIGHT = 0xFFAAAFBB.toInt()
 
     /** Hue (0-360), saturation and lightness (0-1) */
     fun hsl(color: Int): Triple<Float, Float, Float> {

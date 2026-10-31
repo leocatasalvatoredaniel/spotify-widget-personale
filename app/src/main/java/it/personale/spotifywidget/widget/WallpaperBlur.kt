@@ -114,7 +114,7 @@ object WallpaperBlur {
         val top = (card.top / screen.scale).roundToInt()
         val width = (card.width / screen.scale).roundToInt().coerceAtLeast(1)
         val height = (card.height / screen.scale).roundToInt().coerceAtLeast(1)
-        val veil = WidgetColors.veil(null, style.dark, style.opacity)
+        val veil = WidgetColors.blurVeil(style.dark, style.opacity)
         val pixels = IntArray(width * height) { i ->
             // Outside the screen (a card in the middle of a move) the edge repeats
             val x = (left + i % width).coerceIn(0, screen.width - 1)
