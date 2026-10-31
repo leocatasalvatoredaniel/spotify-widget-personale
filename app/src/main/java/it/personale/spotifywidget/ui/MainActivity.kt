@@ -5,6 +5,7 @@ import android.appwidget.AppWidgetManager
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -40,8 +41,11 @@ import it.personale.spotifywidget.data.WidgetBackground
 import it.personale.spotifywidget.playback.Playback
 import it.personale.spotifywidget.widget.SpotifyWidgetReceiver
 import it.personale.spotifywidget.widget.Wallpaper
+import it.personale.spotifywidget.widget.WallpaperBlur
 import it.personale.spotifywidget.widget.WidgetRenderer
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /**
  * Settings, drawn as a page of One UI 9. Also opened by the launcher when
@@ -140,7 +144,7 @@ private fun SettingsScreen(resumes: Int) {
             )
         }
 
-        BackgroundSection()
+        BackgroundSection(resumes)
 
         OneUiSectionHeader(stringResource(R.string.spotify_title))
         OneUiCard(
@@ -158,15 +162,21 @@ private fun SettingsScreen(resumes: Int) {
 
 /**
  * Background of the widget: the cover, or the veil of the Samsung widgets
- * with the same «Opacità» and «Colori» as their settings
+ * with the same «Opacità» and «Colori» as their settings, and their blur
  */
 @Composable
-private fun BackgroundSection() {
+private fun BackgroundSection(resumes: Int) {
     val context = LocalContext.current
     val app = context.app
     val scope = rememberCoroutineScope()
     var background by remember { mutableStateOf(WidgetBackground()) }
     LaunchedEffect(Unit) { background = app.store.read().background }
+    val canRead = remember(resumes) { WallpaperBlur.canRead() }
+    // What the blur can do now: reading the wallpaper takes a moment
+    var blur by remember { mutableStateOf<BlurState?>(null) }
+    LaunchedEffect(resumes, background) {
+        blur = if (background.cover || !background.blur) null else withContext(Dispatchers.IO) { blurState(context) }
+    }
 
     fun change(updated: WidgetBackground) {
         background = updated
@@ -203,21 +213,79 @@ private fun BackgroundSection() {
                 onClick = { change(background.copy(dark = !background.dark)) },
             )
         }
+        if (WallpaperBlur.supported()) {
+            rows += {
+                OneUiRow(
+                    title = stringResource(R.string.blur_title),
+                    summary = stringResource(
+                        if (background.blur && !canRead) R.string.blur_summary_access else R.string.blur_summary,
+                    ),
+                    checked = background.blur && canRead,
+                    onClick = {
+                        if (canRead) {
+                            change(background.copy(blur = !background.blur))
+                        } else {
+                            // On again once the access is granted
+                            change(background.copy(blur = true))
+                            open(context, allFilesAccessIntent(context))
+                        }
+                    },
+                )
+            }
+        }
     }
     OneUiCard(rows)
     if (background.cover) {
         OneUiFooter(stringResource(R.string.background_cover_footer))
     } else {
         // Whether the phone tells the color of its wallpaper, which tints the veil
-        val wallpaper = remember {
+        val wallpaper = remember(resumes) {
             when {
                 Wallpaper.color(context) != null -> R.string.wallpaper_color_found
                 Wallpaper.isLive(context) -> R.string.wallpaper_color_live
+                // The image of the wallpaper gives its color
+                canRead -> R.string.wallpaper_color_found
                 else -> R.string.wallpaper_color_missing
             }
         }
-        OneUiFooter(stringResource(R.string.background_samsung_footer) + " " + stringResource(wallpaper))
+        val explanation = when {
+            !background.blur -> stringResource(wallpaper)
+            !canRead -> stringResource(R.string.blur_access)
+            else -> when (blur) {
+                null -> null
+                BlurState.LIVE -> stringResource(R.string.blur_live)
+                BlurState.UNREADABLE -> stringResource(R.string.blur_unreadable)
+                BlurState.TAP -> stringResource(R.string.blur_tap)
+                BlurState.READY -> stringResource(R.string.blur_ready)
+            }
+        }
+        OneUiFooter(listOfNotNull(stringResource(R.string.background_samsung_footer), explanation).joinToString(" "))
     }
+}
+
+private enum class BlurState { LIVE, UNREADABLE, TAP, READY }
+
+/** Whether the widgets can blur the wallpaper, or what is missing */
+private suspend fun blurState(context: Context): BlurState? = when (WallpaperBlur.status(context)) {
+    WallpaperBlur.Status.LIVE -> BlurState.LIVE
+    WallpaperBlur.Status.UNREADABLE -> BlurState.UNREADABLE
+    WallpaperBlur.Status.READY -> {
+        val positions = context.app.store.read().positions
+        val ids = AppWidgetManager.getInstance(context).getAppWidgetIds(WidgetRenderer.component(context))
+        if (ids.all { it in positions }) BlurState.READY else BlurState.TAP
+    }
+    else -> null
+}
+
+/** The page of the system where the app gets the access to all files */
+private fun allFilesAccessIntent(context: Context): Intent {
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return Intent(Settings.ACTION_SETTINGS)
+    val app = Intent(
+        Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION,
+        Uri.fromParts("package", context.packageName, null),
+    )
+    return if (app.resolveActivity(context.packageManager) != null) app
+    else Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
 }
 
 private fun open(context: Context, intent: Intent) {

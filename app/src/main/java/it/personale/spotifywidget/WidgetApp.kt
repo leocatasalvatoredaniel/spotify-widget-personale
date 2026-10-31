@@ -7,6 +7,7 @@ import it.personale.spotifywidget.data.WidgetStore
 import it.personale.spotifywidget.playback.NowPlayingUpdater
 import it.personale.spotifywidget.playback.ProgressTicker
 import it.personale.spotifywidget.widget.SystemFont
+import it.personale.spotifywidget.widget.WallpaperBlur
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -27,6 +28,10 @@ class WidgetApp : Application() {
 
     /** System font of Samsung, for the widget and the settings; null where missing */
     val systemFont: SystemFont? by lazy { SystemFont.find() }
+
+    /** The wallpaper blurred as behind the Samsung widgets, computed once */
+    @Volatile
+    var blurredScreen: WallpaperBlur.Screen? = null
 
     /** When play was pressed with Spotify closed (elapsed realtime), 0 if not */
     @Volatile

@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Only to read the wallpaper and blur it behind the widget, as the
+         Samsung widgets: from Android 13 the system gives the wallpaper only
+         to the apps with access to all files. Asked by the settings when the
+         blur is turned on; the app has no access to the internet. -->
+    <uses-permission
+        android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
 
     <queries>
         <!-- Launching and controlling the Spotify app -->

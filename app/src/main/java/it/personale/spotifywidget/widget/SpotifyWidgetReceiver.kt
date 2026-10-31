@@ -32,10 +32,22 @@ class SpotifyWidgetReceiver : AppWidgetProvider() {
         renderAsync(context, intArrayOf(id))
     }
 
+    override fun onDeleted(context: Context, ids: IntArray) {
+        val pending = goAsync()
+        context.app.scope.launch {
+            try {
+                WidgetRenderer.forget(context, ids)
+            } finally {
+                pending.finish()
+            }
+        }
+    }
+
     override fun onReceive(context: Context, intent: Intent) {
+        var render = false
         when (intent.action) {
             // Spotify closed meanwhile: show the play button that opens it
-            WidgetRenderer.ACTION_PLAY_PAUSE -> if (!Playback.playPause(context)) renderAsync(context, null)
+            WidgetRenderer.ACTION_PLAY_PAUSE -> render = !Playback.playPause(context)
             WidgetRenderer.ACTION_PREVIOUS -> Playback.previous(context)
             WidgetRenderer.ACTION_NEXT -> Playback.next(context)
             WidgetRenderer.ACTION_CUSTOM -> {
@@ -51,9 +63,28 @@ class SpotifyWidgetReceiver : AppWidgetProvider() {
             }
             ACTION_PINNED -> {
                 Toast.makeText(context, R.string.widget_pinned, Toast.LENGTH_SHORT).show()
-                renderAsync(context, null)
+                render = true
             }
-            else -> super.onReceive(context, intent)
+            else -> {
+                super.onReceive(context, intent)
+                return
+            }
+        }
+        // The button tapped tells where the widget is on the screen
+        val bounds = intent.sourceBounds
+        val tapped = intent.getStringExtra(WidgetRenderer.EXTRA_TAPPED)
+            ?.let { name -> CardLocator.Tapped.entries.firstOrNull { it.name == name } }
+        val id = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
+        val record = bounds != null && tapped != null
+        if (!render && !record) return
+        val pending = goAsync()
+        context.app.scope.launch {
+            try {
+                if (bounds != null && tapped != null) WidgetRenderer.recordTap(context, id, tapped, bounds)
+                if (render) WidgetRenderer.render(context, null)
+            } finally {
+                pending.finish()
+            }
         }
     }
 

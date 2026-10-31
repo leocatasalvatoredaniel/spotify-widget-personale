@@ -7,7 +7,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Bitmap
+import android.graphics.Color
+import android.graphics.Rect
 import android.graphics.drawable.Icon
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.SpannableString
@@ -18,6 +21,7 @@ import android.view.View
 import android.widget.RemoteViews
 import it.personale.spotifywidget.R
 import it.personale.spotifywidget.app
+import it.personale.spotifywidget.data.CardPosition
 import it.personale.spotifywidget.data.ImageCache
 import it.personale.spotifywidget.data.NowPlaying
 import it.personale.spotifywidget.data.PROGRESS_MAX
@@ -55,7 +59,7 @@ object WidgetRenderer {
         if (targets.isEmpty()) return@withLock
         val data = WidgetData.load(context)
         targets.forEach { id ->
-            manager.updateAppWidget(id, build(context, data, manager.getAppWidgetOptions(id)))
+            manager.updateAppWidget(id, build(context, data, id, manager.getAppWidgetOptions(id)))
         }
         drawn = true
     }
@@ -73,6 +77,40 @@ object WidgetRenderer {
             }
             manager.partiallyUpdateAppWidget(id, views)
         }
+    }
+
+    /**
+     * A tap on the widget [id] told where the [tapped] view is on the screen
+     * ([bounds]): keeps the place of the card, and draws the widget again if
+     * its blurred background has to move
+     */
+    suspend fun recordTap(context: Context, id: Int, tapped: CardLocator.Tapped, bounds: Rect) {
+        if (id == AppWidgetManager.INVALID_APPWIDGET_ID) return
+        // The home screen of a phone is in portrait
+        val (screenWidth, _) = WallpaperBlur.portraitScreen(context) ?: return
+        val options = AppWidgetManager.getInstance(context).getAppWidgetOptions(id)
+        val density = context.resources.displayMetrics.density
+        val found = CardLocator.locate(
+            tapped = tapped,
+            bounds = CardLocator.Bounds(bounds.left, bounds.top, bounds.right, bounds.bottom),
+            cardWidth = (cardWidthDp(options) * density).roundToInt(),
+            cardHeight = (cardHeightDp(options) * density).roundToInt(),
+            metrics = metricsOf(options),
+            density = density,
+            screenWidth = screenWidth,
+        ) ?: return
+        var before: CardPosition? = null
+        val state = context.app.store.update { state ->
+            before = state.positions[id]
+            state.copy(positions = state.positions + (id to CardLocator.update(before, found, density)))
+        }
+        val background = state.background
+        if (state.positions[id] != before && background.blur && !background.cover) render(context, intArrayOf(id))
+    }
+
+    /** The widgets [ids] were removed from the home screen */
+    suspend fun forget(context: Context, ids: IntArray) {
+        context.app.store.update { state -> state.copy(positions = state.positions - ids.toSet()) }
     }
 
     /** Sizes of the card in portrait, where the home screen of a phone is used */
@@ -98,16 +136,22 @@ object WidgetRenderer {
         setProgressBar(R.id.progress_track, PROGRESS_MAX, PROGRESS_MAX - progress, false)
     }
 
-    private fun build(context: Context, data: WidgetData, options: Bundle): RemoteViews {
+    private fun build(context: Context, data: WidgetData, id: Int, options: Bundle): RemoteViews {
         if (!data.hasAccess) {
             return message(context, R.string.widget_no_access, activity(context, REQUEST_APP, appIntent(context)), data)
         }
         val nowPlaying = data.state.nowPlaying
             ?: return message(context, R.string.widget_open_spotify, openSpotify(context), data)
-        return player(context, data, nowPlaying, options)
+        return player(context, data, nowPlaying, id, options)
     }
 
-    private fun player(context: Context, data: WidgetData, nowPlaying: NowPlaying, options: Bundle): RemoteViews {
+    private fun player(
+        context: Context,
+        data: WidgetData,
+        nowPlaying: NowPlaying,
+        id: Int,
+        options: Bundle,
+    ): RemoteViews {
         val views = RemoteViews(context.packageName, R.layout.widget_player)
 
         val widthDp = cardWidthDp(options)
@@ -119,16 +163,31 @@ object WidgetRenderer {
         views.applyStyle(style, data.wallpaperColor)
         views.applyMetrics(metrics, density)
 
-        val background = data.cover?.takeIf { style.cover }?.let {
-            PlayerBackground.render(
-                it,
-                ((widthDp.takeIf { w -> w > 0 } ?: DEFAULT_WIDTH_DP) * density).toInt(),
-                ((heightDp.takeIf { h -> h > 0 } ?: DEFAULT_HEIGHT_DP) * density).toInt(),
-            )
+        val background = when {
+            style.cover -> data.cover?.let {
+                PlayerBackground.render(
+                    it,
+                    ((widthDp.takeIf { w -> w > 0 } ?: DEFAULT_WIDTH_DP) * density).toInt(),
+                    ((heightDp.takeIf { h -> h > 0 } ?: DEFAULT_HEIGHT_DP) * density).toInt(),
+                )
+            }
+            // Until a tap tells where the widget is, the veil without blur
+            style.blur -> data.blurred?.let { screen ->
+                data.state.positions[id]?.let { WallpaperBlur.card(screen, it, style) }
+            }
+            else -> null
         }
         if (background != null) views.setImageViewBitmap(R.id.art, background)
         else views.setImageViewResource(R.id.art, 0)
-        views.setOnClickPendingIntent(R.id.content, openSpotify(context))
+        if (background != null && !style.cover && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            // The blurred wallpaper replaces the veil: under it the veil would darken the rounded edge
+            views.setColorStateList(android.R.id.background, "setBackgroundTintList", ColorStateList.valueOf(Color.TRANSPARENT))
+        }
+        // A tap on the card opens Spotify and tells where the widget is
+        views.setOnClickPendingIntent(
+            R.id.content,
+            activity(context, REQUEST_OPEN, LaunchSpotifyActivity.open(context, id)),
+        )
 
         val font = context.app.systemFont
         views.setTextViewText(R.id.device, inFont(data.device, font?.medium ?: font?.family))
@@ -166,14 +225,23 @@ object WidgetRenderer {
             context.getString(if (playing) R.string.action_pause else R.string.action_play),
         )
         if (data.sessionActive) {
-            views.setOnClickPendingIntent(R.id.play_pause, broadcast(context, ACTION_PLAY_PAUSE, REQUEST_PLAY_PAUSE))
-            views.setOnClickPendingIntent(R.id.previous, broadcast(context, ACTION_PREVIOUS, REQUEST_PREVIOUS))
-            views.setOnClickPendingIntent(R.id.next, broadcast(context, ACTION_NEXT, REQUEST_NEXT))
+            views.setOnClickPendingIntent(
+                R.id.play_pause,
+                broadcast(context, id, ACTION_PLAY_PAUSE, REQUEST_PLAY_PAUSE, CardLocator.Tapped.PLAY),
+            )
+            views.setOnClickPendingIntent(
+                R.id.previous,
+                broadcast(context, id, ACTION_PREVIOUS, REQUEST_PREVIOUS, CardLocator.Tapped.PREVIOUS),
+            )
+            views.setOnClickPendingIntent(
+                R.id.next,
+                broadcast(context, id, ACTION_NEXT, REQUEST_NEXT, CardLocator.Tapped.NEXT),
+            )
         } else {
             // Spotify closed: play opens it and starts the music when it is ready
             views.setOnClickPendingIntent(
                 R.id.play_pause,
-                activity(context, REQUEST_LAUNCH_AND_PLAY, LaunchSpotifyActivity.intent(context)),
+                activity(context, REQUEST_LAUNCH_AND_PLAY, LaunchSpotifyActivity.play(context, id)),
             )
         }
         val skip = if (data.sessionActive) View.VISIBLE else View.INVISIBLE
@@ -181,18 +249,25 @@ object WidgetRenderer {
         views.setViewVisibility(R.id.next, skip)
 
         // Spotify's buttons at the sides, as in the system player
-        listOf(R.id.action_start, R.id.action_end).forEachIndexed { index, id ->
+        listOf(R.id.action_start, R.id.action_end).forEachIndexed { index, view ->
             val action = nowPlaying.actions.getOrNull(index)?.takeIf { data.sessionActive }
             if (action == null) {
-                views.setViewVisibility(id, View.INVISIBLE)
+                views.setViewVisibility(view, View.INVISIBLE)
                 return@forEachIndexed
             }
-            views.setViewVisibility(id, View.VISIBLE)
-            views.setImageViewIcon(id, Icon.createWithResource(Playback.SPOTIFY_PACKAGE, action.icon))
-            views.setContentDescription(id, action.name)
+            views.setViewVisibility(view, View.VISIBLE)
+            views.setImageViewIcon(view, Icon.createWithResource(Playback.SPOTIFY_PACKAGE, action.icon))
+            views.setContentDescription(view, action.name)
             views.setOnClickPendingIntent(
-                id,
-                broadcast(context, ACTION_CUSTOM, REQUEST_CUSTOM + index, action.action),
+                view,
+                broadcast(
+                    context,
+                    id,
+                    ACTION_CUSTOM,
+                    REQUEST_CUSTOM + index,
+                    if (index == 0) CardLocator.Tapped.ACTION_START else CardLocator.Tapped.ACTION_END,
+                    action.action,
+                ),
             )
         }
         return views
@@ -233,8 +308,20 @@ object WidgetRenderer {
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
 
-    private fun broadcast(context: Context, action: String, request: Int, customAction: String? = null): PendingIntent {
-        val intent = Intent(context, SpotifyWidgetReceiver::class.java).setAction(action)
+    /** A button of the widget [id]: its own intent, so that a tap tells which widget it was */
+    private fun broadcast(
+        context: Context,
+        id: Int,
+        action: String,
+        request: Int,
+        tapped: CardLocator.Tapped,
+        customAction: String? = null,
+    ): PendingIntent {
+        val intent = Intent(context, SpotifyWidgetReceiver::class.java)
+            .setAction(action)
+            .setData(widgetUri(id))
+            .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
+            .putExtra(EXTRA_TAPPED, tapped.name)
         customAction?.let { intent.putExtra(EXTRA_CUSTOM_ACTION, it) }
         return PendingIntent.getBroadcast(
             context,
@@ -249,6 +336,10 @@ object WidgetRenderer {
     const val ACTION_NEXT = "it.personale.spotifywidget.NEXT"
     const val ACTION_CUSTOM = "it.personale.spotifywidget.CUSTOM_ACTION"
     const val EXTRA_CUSTOM_ACTION = "custom_action"
+    const val EXTRA_TAPPED = "tapped"
+
+    /** Makes the intents of each widget different: extras do not count */
+    fun widgetUri(id: Int): Uri = Uri.fromParts("widget", id.toString(), null)
 
     // Size of the player when the launcher does not report it
     private const val DEFAULT_WIDTH_DP = 360
@@ -402,11 +493,14 @@ private class WidgetData(
     val output: Playback.OutputSwitcher,
     /** Main color of the wallpaper, for the veil of the Samsung style */
     val wallpaperColor: Int?,
+    /** The wallpaper blurred, when the widget blurs it */
+    val blurred: WallpaperBlur.Screen?,
 ) {
     companion object {
         suspend fun load(context: Context): WidgetData {
             val state = context.app.store.read()
             val controller = Playback.spotifyController(context)
+            val blurred = if (state.background.cover) null else WallpaperBlur.screen(context)
             return WidgetData(
                 state = state,
                 hasAccess = Playback.hasAccess(context),
@@ -415,7 +509,9 @@ private class WidgetData(
                 cover = if (state.background.cover) ImageCache.load(state.nowPlaying?.artPath) else null,
                 device = Playback.outputName(context, controller),
                 output = Playback.outputSwitcher(context),
-                wallpaperColor = if (state.background.cover) null else Wallpaper.color(context),
+                // The average of the wallpaper, if it can be read, is closer than its main color
+                wallpaperColor = if (state.background.cover) null else blurred?.average ?: Wallpaper.color(context),
+                blurred = blurred,
             )
         }
     }

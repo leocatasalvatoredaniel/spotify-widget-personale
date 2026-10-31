@@ -55,7 +55,7 @@ Nell'app trovi anche:
 
 | Tocchi | Cosa succede |
 | --- | --- |
-| copertina, titolo | apre Spotify |
+| copertina, titolo | apre Spotify (e dice all'app dove si trova il widget, per la sfocatura) |
 | dispositivo o icona ▷) in alto a destra | cambia uscita audio (vedi limiti) |
 | shuffle, + | le stesse funzioni dei pulsanti di Spotify nel player del sistema. Il + salva il brano in *Brani che ti piacciono* (La tua libreria): diventa ✓ e compare la conferma |
 | ⏮ ▶/⏸ ⏭ | comandi di riproduzione |
@@ -72,9 +72,15 @@ In alternativa, nell'app (**Sfondo del widget**) puoi spegnere **Copertina come 
 - **Opacità**: 0, 50 o 100%;
 - **Colori**: Scuro o Chiaro.
 
-I widget Samsung sfocano lo sfondo che hanno dietro, ne rinforzano i colori e lo scuriscono. Il widget di un'app non può sfocare ciò che sta dietro, perché è riservato ai widget di sistema: può solo stendere sopra un velo di colore. Il velo scuro al 50% è misurato sulla Home, accanto a un widget Samsung al 50% sullo stesso sfondo: lascia passare la stessa luce e prende i colori dello sfondo rinforzati, così il colore medio coincide; manca solo la sfocatura. Opacità 0 e 100 e il velo chiaro sono misurati sull'anteprima delle impostazioni dei widget Samsung.
+I widget Samsung sfocano lo sfondo che hanno dietro, ne rinforzano i colori e lo scuriscono. Il widget di un'app non può vedere ciò che ha dietro, ma l'app può leggere lo sfondo del telefono e disegnare lei la stessa sfocatura. Per farlo:
 
-Il colore dello sfondo lo comunica il telefono (da Android 12). Se non lo comunica, per esempio con uno sfondo animato, il velo è grigio neutro. Sotto **Sfondo del widget**, nell'app, è scritto quale dei due casi vale. Per somigliare agli altri widget della Home usa la loro stessa opacità.
+1. In **Sfondo del widget** spegni *Copertina come sfondo* e attiva **Sfocatura**.
+2. Android apre la pagina **Accesso a tutti i file**: attivalo per *Widget Musica*. Da Android 13 è l'unico modo per un'app di leggere lo sfondo del telefono. L'app non ha accesso a internet, quindi lo sfondo non esce dal telefono.
+3. **Tocca il widget una volta**, anche su un pulsante: Android non dice all'app dove si trova il widget sulla schermata Home, il tocco sì. Se sposti il widget, toccalo di nuovo.
+
+Sfocatura, colori rinforzati e velo scuro al 50% sono misurati sulla Home, accanto a un widget Samsung al 50% sullo stesso sfondo: la differenza è di circa 4/255. Opacità 0 e 100 e il velo chiaro sono misurati solo sull'anteprima delle impostazioni dei widget Samsung.
+
+Senza sfocatura (spenta, prima del primo tocco, con uno sfondo animato o se il telefono non dà l'immagine dello sfondo) resta un velo di colore. Il velo scuro al 50% lascia passare la stessa luce del widget Samsung e prende i colori dello sfondo rinforzati, così il colore medio coincide; manca la sfocatura. Il colore dello sfondo viene dall'immagine dello sfondo se l'app la può leggere, altrimenti dal telefono (da Android 12); se nessuno dei due lo dà, il velo è grigio neutro. Sotto **Sfondo del widget**, nell'app, è scritto quale caso vale. Per somigliare agli altri widget della Home usa la loro stessa opacità.
 
 Il testo usa il font di sistema Samsung (One UI Sans), come il player della tendina. I widget prendono il font di Android a meno che non si indichi una famiglia di sistema per nome: l'app la cerca negli elenchi dei font del telefono. In **Widget**, nell'app, è scritto quale ha trovato; se non la trova, il testo resta nel font di Android.
 
@@ -87,7 +93,8 @@ Il colore della barra segue la stessa regola di One UI: la tinta della copertina
 - **Shuffle e +** dipendono da Spotify: se Spotify non risponde ai pulsanti premuti da un'altra app, non funzionano dal widget (play, pausa e brani funzionano comunque).
 - **Spotify chiuso**: resta l'ultimo brano, in pausa. Play apre Spotify e avvia la musica appena è pronto.
 - Il **titolo scorre** se il launcher lo permette; altrimenti viene tagliato.
-- Angoli arrotondati da Android 12.
+- Angoli arrotondati e sfocatura da Android 12.
+- **Sfocatura**: lo sfondo si sposta con il widget solo dopo un tocco; Samsung Home non deve far scorrere lo sfondo tra le pagine (è l'impostazione predefinita).
 
 ## Sviluppo
 

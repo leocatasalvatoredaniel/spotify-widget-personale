@@ -1,5 +1,6 @@
 package it.personale.spotifywidget
 
+import it.personale.spotifywidget.data.CardPosition
 import it.personale.spotifywidget.data.StateJson
 import it.personale.spotifywidget.data.WidgetState
 import org.junit.Assert.assertEquals
@@ -33,5 +34,16 @@ class StateJsonTest {
         assertTrue(state.background.cover)
         assertEquals(50, state.background.opacity)
         assertTrue(state.background.dark)
+    }
+
+    @Test
+    fun positionsOfTheWidgetsAreKept() {
+        val state = WidgetState(positions = mapOf(42 to CardPosition(67, 245, 1019, 705, 1080, exact = true)))
+        val json = StateJson.encodeToString(WidgetState.serializer(), state)
+        assertEquals(state, StateJson.decodeFromString(WidgetState.serializer(), json))
+        // Saved before the blur: no blur, no positions
+        val old = StateJson.decodeFromString(WidgetState.serializer(), """{"background":{"cover":false}}""")
+        assertFalse(old.background.blur)
+        assertTrue(old.positions.isEmpty())
     }
 }

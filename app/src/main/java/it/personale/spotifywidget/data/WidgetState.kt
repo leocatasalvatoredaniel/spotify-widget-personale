@@ -2,6 +2,7 @@ package it.personale.spotifywidget.data
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlin.math.roundToInt
 
 /** JSON of the saved state: fields of older versions are ignored */
 val StateJson = Json {
@@ -72,6 +73,8 @@ data class WidgetBackground(
     /** 0, 50 or 100, as the slider of the Samsung widgets */
     val opacity: Int = 50,
     val dark: Boolean = true,
+    /** Blur the wallpaper behind the widget, as Samsung: needs the access to all files */
+    val blur: Boolean = false,
 ) {
     companion object {
         val OPACITIES = listOf(0, 50, 100)
@@ -82,7 +85,36 @@ data class WidgetBackground(
 data class WidgetState(
     val nowPlaying: NowPlaying? = null,
     val background: WidgetBackground = WidgetBackground(),
+    /** Where each widget is on the screen, by widget id: learned from the taps */
+    val positions: Map<Int, CardPosition> = emptyMap(),
 )
+
+/**
+ * Card of a widget on the screen, in pixels of the screen in portrait.
+ * Android does not tell a widget where it is: a tap does.
+ */
+@Serializable
+data class CardPosition(
+    val left: Int,
+    val top: Int,
+    val right: Int,
+    val bottom: Int,
+    /** Width of the screen when it was measured: the resolution can change */
+    val screenWidth: Int,
+    /** Bounds of the card itself; false when worked out from a button */
+    val exact: Boolean,
+) {
+    val width: Int get() = right - left
+    val height: Int get() = bottom - top
+
+    /** The same card on a screen [width] pixels wide */
+    fun onScreen(width: Int): CardPosition {
+        if (width == screenWidth || screenWidth <= 0) return this
+        val scale = width.toFloat() / screenWidth
+        fun scaled(value: Int) = (value * scale).roundToInt()
+        return CardPosition(scaled(left), scaled(top), scaled(right), scaled(bottom), width, exact)
+    }
+}
 
 /** Time as in the system player: 00:49, 03:09, 1:02:03 */
 fun formatTime(millis: Long): String {

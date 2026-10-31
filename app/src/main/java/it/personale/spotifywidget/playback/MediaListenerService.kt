@@ -91,7 +91,11 @@ class MediaListenerService : NotificationListenerService() {
 
     private val wallpaperListener by lazy {
         WallpaperManager.OnColorsChangedListener { _, which ->
-            if (which and WallpaperManager.FLAG_SYSTEM != 0) app.scope.launch { WidgetRenderer.renderAll(app) }
+            if (which and WallpaperManager.FLAG_SYSTEM != 0) {
+                // A new wallpaper: blur it again
+                app.blurredScreen = null
+                app.scope.launch { WidgetRenderer.renderAll(app) }
+            }
         }
     }
 
