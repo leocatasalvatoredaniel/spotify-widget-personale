@@ -4,7 +4,9 @@
     <queries>
         <!-- Launching and controlling the Spotify app -->
         <package android:name="com.spotify.music" />
-        <!-- Output switcher of the system, as the button of the media player -->
+        <!-- Output switcher of the system, as the button of the media player:
+             the media panel of Samsung, otherwise the one of Android -->
+        <package android:name="com.samsung.android.mdx.quickboard" />
         <intent>
             <action android:name="com.android.settings.panel.action.MEDIA_OUTPUT" />
         </intent>

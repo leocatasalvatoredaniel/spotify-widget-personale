@@ -153,5 +153,28 @@ private fun WidgetCard() {
             }) { Text(stringResource(R.string.widget_add)) }
         }
         Text(stringResource(R.string.widget_hint), style = MaterialTheme.typography.bodySmall)
+        OutputDiagnostics()
+    }
+}
+
+/** Which panel the output button opens on this phone, to report it if it is wrong */
+@Composable
+private fun OutputDiagnostics() {
+    val context = LocalContext.current
+    val kind = remember { Playback.outputSwitcher(context).kind }
+    val samsung = remember { Playback.samsungMediaActivities(context) }
+    val target = stringResource(
+        when (kind) {
+            Playback.OutputSwitcher.Kind.SAMSUNG -> R.string.output_samsung
+            Playback.OutputSwitcher.Kind.ANDROID -> R.string.output_android
+            Playback.OutputSwitcher.Kind.SPOTIFY -> R.string.output_spotify
+        },
+    )
+    Text(stringResource(R.string.output_target, target), style = MaterialTheme.typography.bodySmall)
+    if (samsung != null && kind != Playback.OutputSwitcher.Kind.SAMSUNG) {
+        Text(
+            stringResource(R.string.output_samsung_activities, samsung.joinToString().ifEmpty { "–" }),
+            style = MaterialTheme.typography.bodySmall,
+        )
     }
 }

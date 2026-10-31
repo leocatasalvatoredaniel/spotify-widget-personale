@@ -58,7 +58,7 @@ Con un widget basso (meno di 2 righe) spariscono prima il dispositivo, poi i tem
 ## Limiti noti
 
 - **La barra non si trascina** e non ha il pallino: i widget di Android non supportano i cursori. Si aggiorna ogni secondo, solo con lo schermo acceso e la musica in riproduzione.
-- **Cambio uscita**: il widget apre il selettore di uscita del sistema se il telefono lo permette alle altre app; altrimenti apre Spotify, dove c'è *Dispositivi disponibili*.
+- **Cambio uscita**: sui Samsung il widget apre il pannello multimediale di One UI (app di sistema *Media and devices*), come il player della tendina. Samsung non lo documenta: se un aggiornamento di One UI lo sposta o lo chiude alle altre app, il widget usa il pannello di uscita di Android e, in mancanza anche di quello, apre Spotify (*Dispositivi disponibili*). Nell'app, sezione **Widget**, c'è scritto quale pannello apre il pulsante.
 - **Shuffle e +** dipendono da Spotify: se Spotify non risponde ai pulsanti premuti da un'altra app, non funzionano dal widget (play, pausa e brani funzionano comunque).
 - **Spotify chiuso**: resta l'ultimo brano, in pausa. Play apre Spotify e avvia la musica appena è pronto.
 - Il **titolo scorre** se il launcher lo permette; altrimenti viene tagliato.

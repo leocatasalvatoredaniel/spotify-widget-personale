@@ -110,16 +110,18 @@ object Playback {
 
     /**
      * The output switcher of the system for Spotify, as the button of the
-     * media player; Spotify itself where the system does not offer it
+     * media player: Samsung's media panel, otherwise the one of Android,
+     * otherwise Spotify itself
      */
     fun outputSwitcher(context: Context): OutputSwitcher {
         val packageManager = context.packageManager
+        samsungMediaPanel(packageManager)?.let { return OutputSwitcher.Activity(it, OutputSwitcher.Kind.SAMSUNG) }
         val panel = Intent(ACTION_MEDIA_OUTPUT_PANEL)
             .putExtra(EXTRA_MEDIA_OUTPUT_PANEL_PACKAGE, SPOTIFY_PACKAGE)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         val activity = packageManager.resolveActivity(panel, PackageManager.MATCH_DEFAULT_ONLY)
         if (activity != null && activity.activityInfo.exported && activity.activityInfo.permission == null) {
-            return OutputSwitcher.Activity(panel)
+            return OutputSwitcher.Activity(panel, OutputSwitcher.Kind.ANDROID)
         }
         val dialog = Intent(ACTION_MEDIA_OUTPUT_DIALOG)
             .setPackage(SYSTEMUI_PACKAGE)
@@ -128,14 +130,54 @@ object Playback {
         if (receiver != null && receiver.activityInfo.exported && receiver.activityInfo.permission == null) {
             return OutputSwitcher.Broadcast(dialog)
         }
-        return OutputSwitcher.Activity(spotifyLaunchIntent(context))
+        return OutputSwitcher.Activity(spotifyLaunchIntent(context), OutputSwitcher.Kind.SPOTIFY)
     }
 
-    sealed interface OutputSwitcher {
-        /** Null when Spotify is not installed */
-        class Activity(val intent: Intent?) : OutputSwitcher
-        class Broadcast(val intent: Intent) : OutputSwitcher
+    /**
+     * The media panel of One UI («Media and devices»): the media playing and
+     * the audio outputs, with the volume and Smart View. Samsung does not
+     * document it, so it is used only if another app may open it.
+     */
+    private fun samsungMediaPanel(packageManager: PackageManager): Intent? {
+        val panel = Intent()
+            .setComponent(ComponentName(SAMSUNG_MEDIA_PACKAGE, SAMSUNG_MEDIA_ACTIVITY))
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        if (canOpen(packageManager, panel)) return panel
+        val main = packageManager.getLaunchIntentForPackage(SAMSUNG_MEDIA_PACKAGE)
+            ?.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        return main?.takeIf { canOpen(packageManager, it) }
     }
+
+    private fun canOpen(packageManager: PackageManager, intent: Intent): Boolean {
+        val info = runCatching { packageManager.resolveActivity(intent, 0)?.activityInfo }.getOrNull()
+            ?: return false
+        return info.exported && info.enabled && info.permission == null
+    }
+
+    /** Activities of the Samsung media panel that other apps may open, to diagnose the button */
+    fun samsungMediaActivities(context: Context): List<String>? = runCatching {
+        context.packageManager
+            .getPackageInfo(SAMSUNG_MEDIA_PACKAGE, PackageManager.GET_ACTIVITIES)
+            .activities.orEmpty()
+            .filter { it.exported && it.permission == null }
+            .map { it.name.removePrefix("$SAMSUNG_MEDIA_PACKAGE.") }
+    }.getOrNull()
+
+    sealed interface OutputSwitcher {
+        val kind: Kind
+
+        /** [intent] is null when Spotify is not installed */
+        class Activity(val intent: Intent?, override val kind: Kind) : OutputSwitcher
+        class Broadcast(val intent: Intent) : OutputSwitcher {
+            override val kind = Kind.ANDROID
+        }
+
+        enum class Kind { SAMSUNG, ANDROID, SPOTIFY }
+    }
+
+    // Media panel of One UI
+    private const val SAMSUNG_MEDIA_PACKAGE = "com.samsung.android.mdx.quickboard"
+    private const val SAMSUNG_MEDIA_ACTIVITY = "com.samsung.android.mdx.quickboard.view.MediaActivity"
 
     // Used by the media player of the system (Settings and System UI)
     private const val ACTION_MEDIA_OUTPUT_PANEL = "com.android.settings.panel.action.MEDIA_OUTPUT"

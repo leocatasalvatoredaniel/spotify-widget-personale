@@ -27,5 +27,10 @@
     <string name="access_grant">Concedi l\'accesso</string>
     <string name="widget_title">Widget</string>
     <string name="widget_add">Aggiungi alla schermata Home</string>
+    <string name="output_target">Il pulsante di uscita del widget apre: %1$s.</string>
+    <string name="output_samsung">il pannello multimediale di Samsung</string>
+    <string name="output_android">il pannello di uscita di Android</string>
+    <string name="output_spotify">Spotify</string>
+    <string name="output_samsung_activities">Schermate apribili di «Media and devices»: %1$s</string>
     <string name="widget_hint">Puoi anche tenere premuto sulla schermata Home → Widget → Widget Musica. La misura consigliata è 4×2.</string>
 </resources>
