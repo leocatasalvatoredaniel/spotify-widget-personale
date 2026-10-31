@@ -186,7 +186,7 @@ object WidgetRenderer {
         // A tap on the card opens Spotify and tells where the widget is
         views.setOnClickPendingIntent(
             R.id.content,
-            activity(context, REQUEST_OPEN, LaunchSpotifyActivity.open(context, id)),
+            activity(context, REQUEST_OPEN, LaunchSpotifyActivity.open(context, id), tellsPlace = true),
         )
 
         val font = context.app.systemFont
@@ -241,7 +241,7 @@ object WidgetRenderer {
             // Spotify closed: play opens it and starts the music when it is ready
             views.setOnClickPendingIntent(
                 R.id.play_pause,
-                activity(context, REQUEST_LAUNCH_AND_PLAY, LaunchSpotifyActivity.play(context, id)),
+                activity(context, REQUEST_LAUNCH_AND_PLAY, LaunchSpotifyActivity.play(context, id), tellsPlace = true),
             )
         }
         val skip = if (data.sessionActive) View.VISIBLE else View.INVISIBLE
@@ -300,13 +300,23 @@ object WidgetRenderer {
     private fun appIntent(context: Context) =
         Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
-    private fun activity(context: Context, request: Int, intent: Intent): PendingIntent =
+    /** [tellsPlace]: the tap must bring the bounds of the view (see [placeFlag]) */
+    private fun activity(context: Context, request: Int, intent: Intent, tellsPlace: Boolean = false): PendingIntent =
         PendingIntent.getActivity(
             context,
             request,
             intent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            (if (tellsPlace) placeFlag() else PendingIntent.FLAG_IMMUTABLE) or PendingIntent.FLAG_UPDATE_CURRENT,
         )
+
+    /**
+     * The launcher adds the bounds of the tapped view to the intent, but the
+     * system drops what is added to an immutable intent: the intents that
+     * tell where the widget is are mutable. They name the component of the
+     * app, which the launcher cannot change.
+     */
+    private fun placeFlag(): Int =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0
 
     /** A button of the widget [id]: its own intent, so that a tap tells which widget it was */
     private fun broadcast(
@@ -327,7 +337,7 @@ object WidgetRenderer {
             context,
             request,
             intent,
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+            placeFlag() or PendingIntent.FLAG_UPDATE_CURRENT,
         )
     }
 
