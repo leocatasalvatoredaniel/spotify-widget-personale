@@ -18,6 +18,7 @@ import it.personale.spotifywidget.app
 import it.personale.spotifywidget.data.ImageCache
 import it.personale.spotifywidget.data.NowPlaying
 import it.personale.spotifywidget.data.PROGRESS_MAX
+import it.personale.spotifywidget.data.WidgetBackground
 import it.personale.spotifywidget.data.WidgetState
 import it.personale.spotifywidget.data.formatTime
 import it.personale.spotifywidget.data.progressWithThumb
@@ -95,11 +96,12 @@ object WidgetRenderer {
     }
 
     private fun build(context: Context, data: WidgetData, options: Bundle): RemoteViews {
+        val style = data.state.background
         if (!data.hasAccess) {
-            return message(context, R.string.widget_no_access, activity(context, REQUEST_APP, appIntent(context)))
+            return message(context, R.string.widget_no_access, activity(context, REQUEST_APP, appIntent(context)), style)
         }
         val nowPlaying = data.state.nowPlaying
-            ?: return message(context, R.string.widget_open_spotify, openSpotify(context))
+            ?: return message(context, R.string.widget_open_spotify, openSpotify(context), style)
         return player(context, data, nowPlaying, options)
     }
 
@@ -110,9 +112,12 @@ object WidgetRenderer {
         val heightDp = cardHeightDp(options)
         val density = context.resources.displayMetrics.density
         val metrics = metricsOf(options)
+        val style = data.state.background
+        // Before the sizes: a new background resets the padding of the buttons
+        if (!style.cover) views.applyStyle(style)
         views.applyMetrics(metrics, density)
 
-        val background = data.cover?.let {
+        val background = data.cover?.takeIf { style.cover }?.let {
             PlayerBackground.render(
                 it,
                 ((widthDp.takeIf { w -> w > 0 } ?: DEFAULT_WIDTH_DP) * density).toInt(),
@@ -192,10 +197,14 @@ object WidgetRenderer {
         return views
     }
 
-    private fun message(context: Context, text: Int, click: PendingIntent): RemoteViews =
+    private fun message(context: Context, text: Int, click: PendingIntent, style: WidgetBackground): RemoteViews =
         RemoteViews(context.packageName, R.layout.widget_message).apply {
             setTextViewText(R.id.message, context.getString(text))
             setOnClickPendingIntent(android.R.id.background, click)
+            if (!style.cover) {
+                setInt(android.R.id.background, "setBackgroundResource", backgroundOf(style))
+                if (!style.dark) setTextColor(R.id.message, LIGHT_TEXT)
+            }
         }
 
     private fun outputSwitcher(context: Context, output: Playback.OutputSwitcher): PendingIntent =
@@ -274,10 +283,11 @@ internal fun RemoteViews.applyMetrics(metrics: PlayerMetrics, density: Float) {
     setViewVisibility(R.id.cell_end, actions)
 
     setViewPadding(R.id.content, px(24f), px(14f), px(20f), px(8f))
-    setTextViewTextSize(R.id.device, TypedValue.COMPLEX_UNIT_SP, 12f * scale)
-    setTextViewTextSize(R.id.title, TypedValue.COMPLEX_UNIT_SP, 15f * scale)
-    setTextViewTextSize(R.id.elapsed, TypedValue.COMPLEX_UNIT_SP, 12f * scale)
-    setTextViewTextSize(R.id.duration, TypedValue.COMPLEX_UNIT_SP, 12f * scale)
+    // Text as large as in the media player of One UI (measured)
+    setTextViewTextSize(R.id.device, TypedValue.COMPLEX_UNIT_SP, DEVICE_SP * scale)
+    setTextViewTextSize(R.id.title, TypedValue.COMPLEX_UNIT_SP, TITLE_SP * scale)
+    setTextViewTextSize(R.id.elapsed, TypedValue.COMPLEX_UNIT_SP, TIME_SP * scale)
+    setTextViewTextSize(R.id.duration, TypedValue.COMPLEX_UNIT_SP, TIME_SP * scale)
     BUTTONS.forEach { (id, padding) ->
         val inset = px(padding)
         setViewPadding(id, inset, inset, inset, inset)
@@ -299,6 +309,45 @@ internal fun RemoteViews.applyMetrics(metrics: PlayerMetrics, density: Float) {
         setViewLayoutHeight(id, 48f * scale, dip)
     }
 }
+
+/**
+ * Background as the widgets of Samsung, instead of the cover: a black or
+ * white veil, with dark text and icons on the white one
+ */
+internal fun RemoteViews.applyStyle(style: WidgetBackground) {
+    setInt(android.R.id.background, "setBackgroundResource", backgroundOf(style))
+    if (style.dark) return
+    setTextColor(R.id.device, LIGHT_SECONDARY)
+    setTextColor(R.id.title, LIGHT_TEXT)
+    setTextColor(R.id.elapsed, LIGHT_TERTIARY)
+    setTextColor(R.id.duration, LIGHT_TERTIARY)
+    listOf(R.id.output_icon, R.id.app_icon, R.id.action_start, R.id.previous, R.id.play_pause, R.id.next, R.id.action_end)
+        .forEach { setInt(it, "setColorFilter", LIGHT_TEXT) }
+    listOf(R.id.previous, R.id.play_pause, R.id.next)
+        .forEach { setInt(it, "setBackgroundResource", R.drawable.widget_button_round_light) }
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        setColorStateList(R.id.progress_track, "setProgressTintList", ColorStateList.valueOf(LIGHT_TEXT))
+    }
+}
+
+private fun backgroundOf(style: WidgetBackground): Int = when {
+    style.dark && style.opacity <= 0 -> R.drawable.widget_background_dark_0
+    style.dark && style.opacity < 100 -> R.drawable.widget_background_dark_50
+    style.dark -> R.drawable.widget_background_dark_100
+    style.opacity <= 0 -> R.drawable.widget_background_light_0
+    style.opacity < 100 -> R.drawable.widget_background_light_50
+    else -> R.drawable.widget_background_light_100
+}
+
+// Text on the white veil, as the light widgets of Samsung
+private const val LIGHT_TEXT = 0xFF000000.toInt()
+private const val LIGHT_SECONDARY = 0xD9000000.toInt()
+private const val LIGHT_TERTIARY = 0x99000000.toInt()
+
+// Text sizes (sp) at scale 1
+private const val DEVICE_SP = 10f
+private const val TITLE_SP = 12.5f
+private const val TIME_SP = 10.5f
 
 // Buttons of the controls and the padding (dp) around their icon
 private val BUTTONS = listOf(
@@ -327,7 +376,8 @@ private class WidgetData(
                 state = state,
                 hasAccess = Playback.hasAccess(context),
                 sessionActive = controller != null,
-                cover = ImageCache.load(state.nowPlaying?.artPath),
+                // Not needed when the widget looks as the Samsung ones
+                cover = if (state.background.cover) ImageCache.load(state.nowPlaying?.artPath) else null,
                 device = Playback.outputName(context, controller),
                 output = Playback.outputSwitcher(context),
             )

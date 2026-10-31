@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Background as the widgets of One UI with light colors at opacity 100%:
+     white at 100% (measured on their settings: 29% at 0, 64% at 50) -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <corners android:radius="@dimen/widget_radius" />
+    <solid android:color="#FFFCFCFE" />
+</shape>

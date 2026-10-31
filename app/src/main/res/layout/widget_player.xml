@@ -59,7 +59,8 @@
                     android:singleLine="true"
                     android:text="@string/device_this_phone"
                     android:textColor="@color/widget_text_secondary"
-                    android:textSize="12sp" />
+                    android:textSize="10sp" 
+                    tools:ignore="SmallSp" />
 
                 <ImageView
                     android:id="@+id/output_icon"
@@ -103,7 +104,7 @@
                     android:singleLine="true"
                     android:text="@string/widget_preview_title"
                     android:textColor="@color/widget_text"
-                    android:textSize="15sp">
+                    android:textSize="12.5sp">
 
                     <requestFocus />
                 </TextView>
@@ -171,7 +172,8 @@
                     android:fontFeatureSettings="tnum"
                     android:singleLine="true"
                     android:textColor="@color/widget_text_tertiary"
-                    android:textSize="12sp" />
+                    android:textSize="10.5sp" 
+                    tools:ignore="SmallSp" />
 
                 <TextView
                     android:id="@+id/duration"
@@ -180,7 +182,8 @@
                     android:fontFeatureSettings="tnum"
                     android:singleLine="true"
                     android:textColor="@color/widget_text_tertiary"
-                    android:textSize="12sp" />
+                    android:textSize="10.5sp" 
+                    tools:ignore="SmallSp" />
             </LinearLayout>
 
             <!-- Spotify action, previous, play/pause, next, Spotify action -->

@@ -67,6 +67,13 @@ Il widget si ridimensiona liberamente: pulsanti, testo e margini crescono e si r
 
 Lo sfondo è la copertina sfumata come nel player di One UI: più chiara al centro in alto, più scura verso i lati e il basso.
 
+In alternativa, nell'app (**Sfondo del widget**) puoi spegnere **Copertina come sfondo** e usare lo sfondo dei widget Samsung, con le stesse opzioni:
+
+- **Opacità**: 0, 50 o 100%;
+- **Colori**: Scuro o Chiaro.
+
+Le tonalità sono misurate sulle impostazioni dei widget Samsung. La sfocatura di ciò che sta dietro non è possibile: è riservata ai widget di sistema.
+
 Il colore della barra segue la stessa regola di One UI: la tinta della copertina, satura, oppure blu notte per le copertine in bianco e nero.
 
 ## Limiti noti

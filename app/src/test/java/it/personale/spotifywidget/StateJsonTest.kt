@@ -4,6 +4,7 @@ import it.personale.spotifywidget.data.StateJson
 import it.personale.spotifywidget.data.WidgetState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class StateJsonTest {
@@ -24,5 +25,13 @@ class StateJsonTest {
         assertEquals("/data/covers/now-1.jpg", nowPlaying.artPath)
         assertEquals(0, nowPlaying.durationMs)
         assertFalse(nowPlaying.actions.any())
+    }
+
+    @Test
+    fun widgetsOfEarlierVersionsKeepTheCover() {
+        val state = StateJson.decodeFromString(WidgetState.serializer(), """{"nowPlaying":null}""")
+        assertTrue(state.background.cover)
+        assertEquals(50, state.background.opacity)
+        assertTrue(state.background.dark)
     }
 }

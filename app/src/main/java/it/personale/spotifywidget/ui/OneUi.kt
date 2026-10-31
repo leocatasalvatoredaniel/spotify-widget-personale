@@ -1,6 +1,19 @@
 package it.personale.spotifywidget.ui
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import kotlin.math.roundToInt
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -208,5 +221,89 @@ fun OneUiSwitch(checked: Boolean) {
                 .size(16.dp)
                 .background(Color.White, CircleShape),
         )
+    }
+}
+
+/**
+ * Slider of the Samsung widget settings, with a few stops: a thick rounded
+ * track with a dot at each stop, and a thumb ringed in blue
+ */
+@Composable
+fun OneUiSlider(stops: Int, value: Int, onChange: (Int) -> Unit, modifier: Modifier = Modifier) {
+    val colors = LocalOneUi.current
+    val dark = colors.background.luminance() < 0.5f
+    val track = if (dark) Color(0xFF3A3A3C) else Color(0xFFDCDCDF)
+    val dot = if (dark) Color(0xFF646368) else Color(0xFFB4B4B8)
+    val thumbFill = if (dark) Color(0xFF010101) else Color.White
+
+    fun stopAt(x: Float, width: Float, inset: Float): Int {
+        val step = (width - 2 * inset) / (stops - 1)
+        return ((x - inset) / step).roundToInt().coerceIn(0, stops - 1)
+    }
+
+    Canvas(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(32.dp)
+            .pointerInput(stops) {
+                detectTapGestures { offset ->
+                    onChange(stopAt(offset.x, size.width.toFloat(), 9.5.dp.toPx()))
+                }
+            }
+            .pointerInput(stops) {
+                detectHorizontalDragGestures { change, _ ->
+                    onChange(stopAt(change.position.x, size.width.toFloat(), 9.5.dp.toPx()))
+                }
+            }
+            .semantics {
+                stateDescription = "${value + 1}/$stops"
+            },
+    ) {
+        val trackHeight = 12.5.dp.toPx()
+        val thumbRadius = 9.5.dp.toPx()
+        val y = size.height / 2
+        drawRoundRect(
+            color = track,
+            topLeft = Offset(0f, y - trackHeight / 2),
+            size = Size(size.width, trackHeight),
+            cornerRadius = CornerRadius(trackHeight / 2),
+        )
+        val step = (size.width - 2 * thumbRadius) / (stops - 1)
+        repeat(stops) { drawCircle(dot, radius = 3.75.dp.toPx(), center = Offset(thumbRadius + it * step, y)) }
+        val thumb = Offset(thumbRadius + value * step, y)
+        drawCircle(colors.accent, radius = thumbRadius, center = thumb)
+        drawCircle(thumbFill, radius = thumbRadius - 2.5.dp.toPx(), center = thumb)
+    }
+}
+
+/** Round checkerboard of the opacity slider of Samsung */
+@Composable
+fun OneUiTransparencyIcon() {
+    val dark = LocalOneUi.current.background.luminance() < 0.5f
+    val a = if (dark) Color(0xFF5E5E61) else Color(0xFFBDBDC0)
+    val b = if (dark) Color(0xFF2C2C2E) else Color(0xFFECECEE)
+    Canvas(modifier = Modifier.size(26.dp).clip(CircleShape)) {
+        val cell = size.width / 4
+        for (row in 0 until 4) for (col in 0 until 4) {
+            drawRect(if ((row + col) % 2 == 0) a else b, Offset(col * cell, row * cell), Size(cell, cell))
+        }
+        drawCircle(a, radius = size.width / 2, style = Stroke(1.dp.toPx()))
+    }
+}
+
+/** Row of a group with a slider under its title, as «Opacità» of Samsung */
+@Composable
+fun OneUiSliderRow(title: String, stops: Int, value: Int, onChange: (Int) -> Unit) {
+    val colors = LocalOneUi.current
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 13.dp)) {
+        Text(title, style = TextStyle(fontSize = 18.sp, color = colors.text))
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            OneUiTransparencyIcon()
+            Spacer(modifier = Modifier.size(width = 18.dp, height = 1.dp))
+            OneUiSlider(stops, value, onChange, Modifier.weight(1f))
+        }
     }
 }

@@ -32,6 +32,14 @@
     <string name="output_android">Pannello di uscita di Android</string>
     <string name="output_spotify">Spotify</string>
     <string name="output_samsung_activities">Schermate di «Media and devices» apribili da altre app: %1$s</string>
+    <string name="background_title">Sfondo del widget</string>
+    <string name="background_cover">Copertina come sfondo</string>
+    <string name="background_opacity">Opacità</string>
+    <string name="background_colors">Colori</string>
+    <string name="background_dark">Scuro</string>
+    <string name="background_light">Chiaro</string>
+    <string name="background_cover_footer">La copertina del brano, sfumata come nel player del sistema. Spegnila per uno sfondo come i widget Samsung.</string>
+    <string name="background_samsung_footer">Sfondo velato come i widget Samsung. A differenza dei loro, non può sfocare ciò che c\'è dietro: è riservato ai widget di sistema.</string>
     <string name="spotify_title">Spotify</string>
     <string name="liked_title">Brani che ti piacciono</string>
     <string name="liked_summary">Il pulsante + del widget salva qui il brano in ascolto</string>

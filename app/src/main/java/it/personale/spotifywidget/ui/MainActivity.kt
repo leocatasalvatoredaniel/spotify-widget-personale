@@ -22,9 +22,12 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -32,6 +35,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import it.personale.spotifywidget.R
+import it.personale.spotifywidget.app
+import it.personale.spotifywidget.data.WidgetBackground
 import it.personale.spotifywidget.playback.Playback
 import it.personale.spotifywidget.widget.SpotifyWidgetReceiver
 import it.personale.spotifywidget.widget.WidgetRenderer
@@ -129,6 +134,8 @@ private fun SettingsScreen(resumes: Int) {
             )
         }
 
+        BackgroundSection()
+
         OneUiSectionHeader(stringResource(R.string.spotify_title))
         OneUiCard(
             listOf {
@@ -141,6 +148,60 @@ private fun SettingsScreen(resumes: Int) {
         )
         Spacer(modifier = Modifier.height(32.dp))
     }
+}
+
+/**
+ * Background of the widget: the cover, or the veil of the Samsung widgets
+ * with the same «Opacità» and «Colori» as their settings
+ */
+@Composable
+private fun BackgroundSection() {
+    val context = LocalContext.current
+    val app = context.app
+    val scope = rememberCoroutineScope()
+    var background by remember { mutableStateOf(WidgetBackground()) }
+    LaunchedEffect(Unit) { background = app.store.read().background }
+
+    fun change(updated: WidgetBackground) {
+        background = updated
+        scope.launch {
+            app.store.update { it.copy(background = updated) }
+            WidgetRenderer.renderAll(context.applicationContext)
+        }
+    }
+
+    OneUiSectionHeader(stringResource(R.string.background_title))
+    val rows = mutableListOf<@Composable () -> Unit>(
+        {
+            OneUiRow(
+                title = stringResource(R.string.background_cover),
+                checked = background.cover,
+                onClick = { change(background.copy(cover = !background.cover)) },
+            )
+        },
+    )
+    if (!background.cover) {
+        rows += {
+            OneUiSliderRow(
+                title = stringResource(R.string.background_opacity),
+                stops = WidgetBackground.OPACITIES.size,
+                value = WidgetBackground.OPACITIES.indexOf(background.opacity).coerceAtLeast(0),
+                onChange = { change(background.copy(opacity = WidgetBackground.OPACITIES[it])) },
+            )
+        }
+        rows += {
+            OneUiRow(
+                title = stringResource(R.string.background_colors),
+                summary = stringResource(if (background.dark) R.string.background_dark else R.string.background_light),
+                summaryIsValue = true,
+                onClick = { change(background.copy(dark = !background.dark)) },
+            )
+        }
+    }
+    OneUiCard(rows)
+    OneUiFooter(
+        stringResource(if (background.cover) R.string.background_cover_footer else R.string.background_samsung_footer),
+    )
 }
 
 private fun open(context: Context, intent: Intent) {

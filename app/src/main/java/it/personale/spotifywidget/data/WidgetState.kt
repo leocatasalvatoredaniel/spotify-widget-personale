@@ -62,11 +62,28 @@ data class NowPlaying(
     )
 }
 
+/**
+ * Background of the widget: the cover, as the media player of the system,
+ * or a veil as the widgets of Samsung (opacity and colors as their settings)
+ */
+@Serializable
+data class WidgetBackground(
+    val cover: Boolean = true,
+    /** 0, 50 or 100, as the slider of the Samsung widgets */
+    val opacity: Int = 50,
+    val dark: Boolean = true,
+) {
+    companion object {
+        val OPACITIES = listOf(0, 50, 100)
+    }
+}
+
 @Serializable
 data class WidgetState(
     val nowPlaying: NowPlaying? = null,
     /** Notification icon of Spotify, a drawable of the Spotify app */
     val appIcon: Int? = null,
+    val background: WidgetBackground = WidgetBackground(),
 )
 
 /** Time as in the system player: 00:49, 03:09, 1:02:03 */
