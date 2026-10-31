@@ -1,6 +1,8 @@
 package it.personale.spotifywidget.widget
 
 import kotlin.math.abs
+import kotlin.math.atan2
+import kotlin.math.hypot
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.pow
@@ -23,7 +25,58 @@ object WidgetColors {
     private const val SATURATION = 1f
     private const val LIGHTNESS = 0.45f
 
-    /** [coverColor]: the most colorful color of the cover, null if it has none */
+    /** One color of the cover and how many of its pixels have it */
+    data class CoverColor(val color: Int, val population: Int)
+
+    /**
+     * The color that leads the cover, as Material's «Score» (Android's color
+     * extraction) and the media player of One UI pick it: the hue that covers
+     * the most of the cover together with its neighbors, preferring colorful
+     * ones; null when the cover has no colors. A small but bright detail
+     * (e.g. yellow hair on a pink cover) does not win over the main hue.
+     */
+    fun sourceColor(colors: List<CoverColor>): Int? {
+        val total = colors.sumOf { it.population }.toFloat()
+        if (total <= 0f) return null
+        val lch = colors.map { it to lch(it.color) }
+        val huePopulation = FloatArray(360)
+        lch.forEach { (color, value) -> huePopulation[value.third.roundToInt().mod(360)] += color.population.toFloat() }
+        fun share(hue: Int): Float = (-14..15).sumOf { huePopulation[(hue + it).mod(360)].toDouble() }.toFloat() / total
+        return lch
+            .map { (color, value) -> Triple(color.color, value.second, share(value.third.roundToInt().mod(360))) }
+            .filter { (_, chroma, share) -> chroma >= MIN_CHROMA && share > MIN_SHARE }
+            .maxByOrNull { (_, chroma, share) ->
+                share * 100 * 0.7f + (chroma - TARGET_CHROMA) * (if (chroma < TARGET_CHROMA) 0.1f else 0.3f)
+            }
+            ?.first
+    }
+
+    // Thresholds of Material's «Score»
+    private const val MIN_CHROMA = 5f
+    private const val MIN_SHARE = 0.01f
+    private const val TARGET_CHROMA = 48f
+
+    /** CIE lightness, chroma and hue (degrees) of an sRGB color */
+    fun lch(color: Int): Triple<Float, Float, Float> {
+        fun linear(shift: Int): Double {
+            val c = ((color shr shift) and 0xFF) / 255.0
+            return if (c <= 0.04045) c / 12.92 else ((c + 0.055) / 1.055).pow(2.4)
+        }
+        val r = linear(16)
+        val g = linear(8)
+        val b = linear(0)
+        val x = (0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047
+        val y = 0.2126 * r + 0.7152 * g + 0.0722 * b
+        val z = (0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883
+        fun f(t: Double) = if (t > 0.008856) Math.cbrt(t) else 7.787 * t + 16.0 / 116
+        val lightness = 116 * f(y) - 16
+        val a = 500 * (f(x) - f(y))
+        val bb = 200 * (f(y) - f(z))
+        val hue = (Math.toDegrees(atan2(bb, a)) + 360) % 360
+        return Triple(lightness.toFloat(), hypot(a, bb).toFloat(), hue.toFloat())
+    }
+
+    /** [coverColor]: the color that leads the cover, null if it has no colors */
     fun progressColor(coverColor: Int?): Int {
         if (coverColor == null) return NEUTRAL
         val (hue, saturation, _) = hsl(coverColor)

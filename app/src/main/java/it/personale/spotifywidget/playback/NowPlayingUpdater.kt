@@ -115,14 +115,15 @@ class NowPlayingUpdater(private val app: WidgetApp) {
             ?: metadata.getBitmap(MediaMetadata.METADATA_KEY_ART)
             ?: metadata.getBitmap(MediaMetadata.METADATA_KEY_DISPLAY_ICON)
 
-    /** Color of the progress bar from the cover, as the system player picks it */
+    /**
+     * Color of the progress bar from the cover, as the system player picks it.
+     * No filters: the default ones of Palette drop skin tones, which often
+     * lead a cover.
+     */
     private fun accentOf(bitmap: Bitmap): Int? = runCatching {
-        val palette = Palette.from(bitmap).maximumColorCount(16).generate()
-        val colorful = palette.vibrantSwatch
-            ?: palette.darkVibrantSwatch
-            ?: palette.lightVibrantSwatch
-            ?: palette.mutedSwatch
-        WidgetColors.progressColor(colorful?.rgb)
+        val palette = Palette.from(bitmap).clearFilters().maximumColorCount(32).generate()
+        val colors = palette.swatches.map { WidgetColors.CoverColor(it.rgb, it.population) }
+        WidgetColors.progressColor(WidgetColors.sourceColor(colors))
     }.getOrNull()
 
     private companion object {

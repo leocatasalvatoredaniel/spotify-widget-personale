@@ -56,4 +56,29 @@ class WidgetColorsTest {
         assertEquals(0.1f, lightness, 0.02f)
         assertTrue(WidgetColors.hsl(WidgetColors.veil(0xFF8A5A30.toInt(), dark = false, opacity = 0)).third > 0.9f)
     }
+
+    @Test
+    fun theMainHueLeadsNotASmallBrightDetail() {
+        // As the cover of «Fuoco di paglia»: pink sky and skin, blue water, small yellow hair
+        val cover = listOf(
+            WidgetColors.CoverColor(0xFFC88C8C.toInt(), 30),
+            WidgetColors.CoverColor(0xFF893C23.toInt(), 25),
+            WidgetColors.CoverColor(0xFF2E4F86.toInt(), 25),
+            WidgetColors.CoverColor(0xFFE2E24A.toInt(), 6),
+            WidgetColors.CoverColor(0xFF1A1A1A.toInt(), 14),
+        )
+        val (hue, _, _) = WidgetColors.hsl(WidgetColors.progressColor(WidgetColors.sourceColor(cover)))
+        assertTrue("hue $hue", hue < 40f)
+    }
+
+    @Test
+    fun coversWithoutColorsHaveNoSource() {
+        val cover = listOf(
+            WidgetColors.CoverColor(0xFF202020.toInt(), 50),
+            WidgetColors.CoverColor(0xFFA0A0A0.toInt(), 40),
+            WidgetColors.CoverColor(0xFFF0F0F0.toInt(), 10),
+        )
+        assertEquals(null, WidgetColors.sourceColor(cover))
+        assertEquals(WidgetColors.NEUTRAL, WidgetColors.progressColor(WidgetColors.sourceColor(cover)))
+    }
 }

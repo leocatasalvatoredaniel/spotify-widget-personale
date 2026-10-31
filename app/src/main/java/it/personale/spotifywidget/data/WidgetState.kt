@@ -97,7 +97,7 @@ fun formatTime(millis: Long): String {
 }
 
 /** Current rule of the color of the progress bar, as One UI picks it */
-const val ACCENT_RULE = 2
+const val ACCENT_RULE = 3
 
 const val PROGRESS_MAX = 1000
 
