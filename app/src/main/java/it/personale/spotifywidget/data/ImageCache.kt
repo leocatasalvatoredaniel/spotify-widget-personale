@@ -16,12 +16,15 @@ import java.security.MessageDigest
 class ImageCache(context: Context) {
     private val dir = File(context.filesDir, "covers").apply { mkdirs() }
 
-    /** Saves the cover of the track playing now */
+    /**
+     * Saves the cover of the track playing now as Spotify gives it to the
+     * system player: same resolution, almost no compression
+     */
     suspend fun saveNowPlaying(bitmap: Bitmap, key: String): String = withContext(Dispatchers.IO) {
-        val file = File(dir, "now-${sha1(key)}.jpg")
+        val file = File(dir, "$PREFIX${sha1(key)}.jpg")
         if (!file.exists()) {
             file.outputStream().use {
-                scaleDown(bitmap, NOW_PLAYING_SIZE_PX).compress(Bitmap.CompressFormat.JPEG, 90, it)
+                scaleDown(bitmap, NOW_PLAYING_SIZE_PX).compress(Bitmap.CompressFormat.JPEG, 97, it)
             }
         }
         file.path
@@ -33,8 +36,13 @@ class ImageCache(context: Context) {
     }
 
     companion object {
-        // The cover fills the whole widget: about its width on a phone
-        private const val NOW_PLAYING_SIZE_PX = 720
+        // Only very large covers are reduced: the widget shows them at full width
+        private const val NOW_PLAYING_SIZE_PX = 1600
+
+        // Covers saved by older versions were smaller: they are saved again
+        private const val PREFIX = "cover-v2-"
+
+        fun isCurrent(path: String?): Boolean = path != null && File(path).name.startsWith(PREFIX)
 
         fun scaleDown(bitmap: Bitmap, maxSize: Int): Bitmap {
             val largest = maxOf(bitmap.width, bitmap.height)

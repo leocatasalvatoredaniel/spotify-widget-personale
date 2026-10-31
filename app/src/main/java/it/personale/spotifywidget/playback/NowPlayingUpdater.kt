@@ -53,7 +53,9 @@ class NowPlayingUpdater(private val app: WidgetApp) {
 
         val previous = app.store.read().nowPlaying
         val key = NowPlaying(title, artist, album).key
-        val keepArt = previous?.key == key && previous.artPath?.let { File(it).exists() } == true
+        val keepArt = previous?.key == key &&
+            ImageCache.isCurrent(previous.artPath) &&
+            previous.artPath?.let { File(it).exists() } == true
         val art = if (keepArt) null else coverOf(metadata)
         val artPath = if (keepArt) previous?.artPath else art?.let { app.images.saveNowPlaying(it, key) }
         // Colors from an older rule are computed again from the saved cover

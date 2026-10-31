@@ -13,21 +13,22 @@ import kotlin.math.roundToInt
 
 /**
  * The cover as the background of the player, shaded as in the media player
- * of One UI: at half brightness at the top center, darker towards the sides
- * and the bottom (measured on the player of a Galaxy S24 Ultra), so that the
- * text at the top and the controls at the bottom stay readable
+ * of One UI. Measured on a Galaxy S24 Ultra by comparing the same cover in
+ * the system player and in the widget: at 51% of its brightness at the top
+ * center, about half of that at the sides, and 19% at the bottom center.
  */
 object PlayerBackground {
-    /** Wide enough for a sharp cover, light enough for the launcher */
-    private const val MAX_WIDTH_PX = 720
+    /** Sharp up to the width of the widget on a large phone */
+    private const val MAX_WIDTH_PX = 1600
 
-    // Black over the cover from the center (0) to the sides (1): 42% at the sides
-    private val SIDE_ALPHAS = floatArrayOf(0.42f, 0.105f, 0f, 0.105f, 0.42f)
-    private val SIDE_STOPS = floatArrayOf(0f, 0.25f, 0.5f, 0.75f, 1f)
+    // Black over the cover across the width (0 = left, 1 = right): none in the
+    // middle, 52% at the sides
+    private val SIDE_STOPS = floatArrayOf(0f, 0.04f, 0.125f, 0.21f, 0.29f, 0.375f, 0.46f, 0.54f, 0.625f, 0.71f, 0.79f, 0.875f, 0.96f, 1f)
+    private val SIDE_ALPHAS = floatArrayOf(0.52f, 0.49f, 0.43f, 0.32f, 0.18f, 0.06f, 0f, 0f, 0.06f, 0.18f, 0.32f, 0.43f, 0.49f, 0.52f)
 
-    // Black over the cover from the top to the bottom
-    private const val TOP_ALPHA = 0.5f
-    private const val BOTTOM_ALPHA = 0.7f
+    // Black over the cover from the top (0) to the bottom (1)
+    private val HEIGHT_STOPS = floatArrayOf(0f, 0.19f, 0.31f, 0.44f, 0.56f, 0.69f, 0.81f, 0.94f, 1f)
+    private val HEIGHT_ALPHAS = floatArrayOf(0.49f, 0.5f, 0.52f, 0.56f, 0.61f, 0.66f, 0.74f, 0.81f, 0.84f)
 
     fun render(cover: Bitmap, widthPx: Int, heightPx: Int): Bitmap {
         val ratio = min(1f, MAX_WIDTH_PX.toFloat() / widthPx)
@@ -59,15 +60,15 @@ object PlayerBackground {
         }
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), sides)
 
-        val bottom = Paint().apply {
+        val heights = Paint().apply {
             shader = LinearGradient(
                 0f, 0f, 0f, height.toFloat(),
-                black(TOP_ALPHA),
-                black(BOTTOM_ALPHA),
+                HEIGHT_ALPHAS.map(::black).toIntArray(),
+                HEIGHT_STOPS,
                 Shader.TileMode.CLAMP,
             )
         }
-        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), bottom)
+        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), heights)
         return result
     }
 

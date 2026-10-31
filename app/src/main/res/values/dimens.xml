@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="widget_radius">24dp</dimen>
+    <!-- Corners of the media player of One UI 9 (measured: 34 dp), larger than
+         the system radius of widgets (16 dp on One UI) -->
+    <dimen name="widget_radius">34dp</dimen>
     <!-- Extra margin above and below the card, as the One UI widgets (see widget_player) -->
     <dimen name="widget_margin_vertical">10.5dp</dimen>
 
