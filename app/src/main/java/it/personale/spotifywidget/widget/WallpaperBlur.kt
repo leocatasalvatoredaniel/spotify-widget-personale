@@ -18,13 +18,16 @@ import android.os.ParcelFileDescriptor
 import android.util.DisplayMetrics
 import android.view.Display
 import androidx.core.graphics.createBitmap
+import androidx.core.graphics.scale
 import it.personale.spotifywidget.app
 import it.personale.spotifywidget.data.CardPosition
 import it.personale.spotifywidget.data.WidgetBackground
 import java.io.File
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
+import kotlin.math.sqrt
 
 /**
  * The wallpaper of the Home screen, blurred as the Samsung widgets show it
@@ -116,68 +119,158 @@ object WallpaperBlur {
         metrics.widthPixels to metrics.heightPixels
     }.getOrNull()
 
+    /** The image of the wallpaper as read, before it is placed on the screen and blurred */
+    private class WallpaperImage(val key: String, val image: Bitmap, val source: Source, val live: Boolean)
+
     /**
-     * The blurred wallpaper, kept until the wallpaper or the screen changes:
-     * the image of the phone, or else the photo chosen in the settings; null
-     * when there is neither
+     * The image of the wallpaper: the one of the phone, or else the photo
+     * chosen in the settings; null when there is neither. [width] x [height]:
+     * about the size it is needed.
+     */
+    private fun source(context: Context, width: Int, height: Int): WallpaperImage? {
+        // A wallpaper drawn by an app is blurred on the Home screen too
+        val live = Wallpaper.isLive(context)
+        if (canRead()) {
+            val manager = WallpaperManager.getInstance(context)
+            val id = runCatching { manager.getWallpaperId(WallpaperManager.FLAG_SYSTEM) }.getOrDefault(-1)
+            readWallpaper(manager, live, width, height)?.let { return WallpaperImage("system:$id", it, Source.SYSTEM, live) }
+        }
+        val picked = pickedFile(context).takeIf { it.exists() } ?: return null
+        val photo = decodePhoto(picked, width, height) ?: return null
+        return WallpaperImage("picked:${picked.lastModified()}", photo, Source.PICKED, live)
+    }
+
+    /** Key of the image [source] would read, without reading it */
+    fun sourceKey(context: Context): String? {
+        if (canRead()) {
+            val manager = WallpaperManager.getInstance(context)
+            val id = runCatching { manager.getWallpaperId(WallpaperManager.FLAG_SYSTEM) }.getOrDefault(-1)
+            return "system:$id"
+        }
+        return pickedFile(context).takeIf { it.exists() }?.let { "picked:${it.lastModified()}" }
+    }
+
+    /**
+     * The blurred wallpaper, kept until the wallpaper, its alignment or the
+     * screen changes; null when there is no image of the wallpaper
      */
     fun screen(context: Context): Screen? {
         if (!supported()) return null
         val (width, height) = realScreen(context)?.let { (w, h) -> min(w, h) to max(w, h) } ?: return null
         val density = context.resources.displayMetrics.density
-        // A wallpaper drawn by an app is blurred on the Home screen too
-        val live = Wallpaper.isLive(context)
-        val screen = "${width}x$height:$density:$live"
         val scale = width.toFloat() / WORK_WIDTH
         val smallHeight = (height / scale).roundToInt()
-
-        if (canRead()) {
-            val manager = WallpaperManager.getInstance(context)
-            val id = runCatching { manager.getWallpaperId(WallpaperManager.FLAG_SYSTEM) }.getOrDefault(-1)
-            val key = "system:$id:$screen"
-            cached(context, key)?.let { return it }
-            readWallpaper(manager, live, WORK_WIDTH, smallHeight)?.let {
-                return blur(context, key, it, width, height, Source.SYSTEM, live)
-            }
+        val live = Wallpaper.isLive(context)
+        // The cache is checked before reading the image, which takes a while
+        sourceKey(context)?.let { imageKey ->
+            val alignment = WallpaperAlignment.read(imageKey) ?: Alignment.NONE
+            val key = "$imageKey:${alignment.format()}:${width}x$height:$density:$live"
+            context.app.blurredScreen?.takeIf { it.key == key }?.let { return it }
         }
-        val picked = pickedFile(context).takeIf { it.exists() } ?: return null
-        val key = "picked:${picked.lastModified()}:$screen"
-        cached(context, key)?.let { return it }
-        val photo = decodePhoto(picked, WORK_WIDTH, smallHeight) ?: return null
-        return blur(context, key, photo, width, height, Source.PICKED, live)
+        val source = source(context, WORK_WIDTH, smallHeight) ?: return null
+        val alignment = WallpaperAlignment.read(source.key) ?: Alignment.NONE
+        val key = "${source.key}:${alignment.format()}:${width}x$height:$density:${source.live}"
+        return blur(context, key, source, alignment, width, height)
     }
 
-    private fun cached(context: Context, key: String) = context.app.blurredScreen?.takeIf { it.key == key }
-
-    /** [wallpaper] on a screen [width] x [height], as One UI Home shows it (filling it, centered), blurred */
+    /** [source] on a screen [width] x [height], as One UI Home shows it, blurred */
     private fun blur(
         context: Context,
         key: String,
-        wallpaper: Bitmap,
+        source: WallpaperImage,
+        alignment: Alignment,
         width: Int,
         height: Int,
-        source: Source,
-        live: Boolean,
     ): Screen {
+        val wallpaper = source.image
         val density = context.resources.displayMetrics.density
         val scale = width.toFloat() / WORK_WIDTH
         val smallWidth = WORK_WIDTH
         val smallHeight = (height / scale).roundToInt()
         val small = createBitmap(smallWidth, smallHeight)
+        // Filling the screen and centered, then as One UI frames it (see [Alignment])
         val fit = max(smallWidth.toFloat() / wallpaper.width, smallHeight.toFloat() / wallpaper.height)
         val matrix = Matrix().apply {
             setScale(fit, fit)
             postTranslate((smallWidth - wallpaper.width * fit) / 2, (smallHeight - wallpaper.height * fit) / 2)
+            postScale(alignment.zoom, alignment.zoom, smallWidth / 2f, smallHeight / 2f)
+            postTranslate(alignment.shiftX * smallWidth, alignment.shiftY * smallWidth)
         }
         Canvas(small).drawBitmap(wallpaper, matrix, Paint(Paint.FILTER_BITMAP_FLAG))
         val pixels = IntArray(smallWidth * smallHeight)
         small.getPixels(pixels, 0, smallWidth, 0, 0, smallWidth, smallHeight)
         small.recycle()
 
-        val blurred = BlurMath.gaussian(pixels, smallWidth, smallHeight, BlurMath.blurDp(live) * density / scale)
-        return Screen(key, smallWidth, smallHeight, scale, blurred, width, BlurMath.average(pixels), source)
+        val blurred = BlurMath.gaussian(pixels, smallWidth, smallHeight, BlurMath.blurDp(source.live) * density / scale)
+        return Screen(key, smallWidth, smallHeight, scale, blurred, width, BlurMath.average(pixels), source.source)
             .also { context.app.blurredScreen = it }
     }
+
+    /**
+     * Finds how One UI frames the wallpaper ([Alignment]) on the [screenshot]
+     * of a page of the Home screen, and keeps it for this wallpaper. Null
+     * when the screenshot is not of this screen, or there is no image of the
+     * wallpaper.
+     */
+    fun align(context: Context, screenshot: Uri, widgets: Collection<CardPosition>): Alignment.Found? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return null
+        val (width, height) = realScreen(context)?.let { (w, h) -> min(w, h) to max(w, h) } ?: return null
+        val scale = width.toFloat() / WORK_WIDTH
+        val smallHeight = (height / scale).roundToInt()
+        val shot = runCatching {
+            ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, screenshot)) { decoder, info, _ ->
+                // A screenshot of this screen, not cropped
+                val ratio = info.size.height.toFloat() / info.size.width
+                require(abs(ratio - height.toFloat() / width) < 0.02f * height / width)
+                decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+                decoder.setTargetSize(WORK_WIDTH, smallHeight)
+            }
+        }.getOrNull() ?: return null
+        val source = source(context, WORK_WIDTH, smallHeight) ?: return null
+        // The image the same size as the screenshot when it fills it
+        val fit = max(WORK_WIDTH.toFloat() / source.image.width, smallHeight.toFloat() / source.image.height)
+        val imageWidth = (source.image.width * fit).roundToInt().coerceAtLeast(1)
+        val imageHeight = (source.image.height * fit).roundToInt().coerceAtLeast(1)
+        val image = source.image.scale(imageWidth, imageHeight)
+        val density = context.resources.displayMetrics.density
+        // The screenshot has the blur of the Home screen: the image gets it too
+        val homeBlur = if (source.live) BlurMath.HOME_BLUR_DP * density / scale else 0f
+        val shotLight = lightness(shot, ALIGN_BLUR)
+        val imageLight = lightness(image, sqrt(ALIGN_BLUR * ALIGN_BLUR + homeBlur * homeBlur))
+        // Without the status bar, the dock and the widgets of this app
+        val use = BooleanArray(WORK_WIDTH * smallHeight) { i ->
+            val x = i % WORK_WIDTH
+            val y = i / WORK_WIDTH
+            y > smallHeight * 0.04f && y < smallHeight * 0.68f && widgets.none { widget ->
+                val card = widget.onScreen(width)
+                x * scale in card.left.toFloat()..card.right.toFloat() && y * scale in card.top.toFloat()..card.bottom.toFloat()
+            }
+        }
+        val found = Alignment.find(shotLight, WORK_WIDTH, smallHeight, imageLight, imageWidth, imageHeight, use)
+        // Not this wallpaper, or a page full of widgets
+        if (found.match < MIN_MATCH) return found
+        WallpaperAlignment.write(source.key, found.alignment)
+        context.app.blurredScreen = null
+        return found
+    }
+
+    /** Lightness of a [bitmap] (0-255), blurred by [sigma] pixels */
+    private fun lightness(bitmap: Bitmap, sigma: Float): FloatArray {
+        val pixels = IntArray(bitmap.width * bitmap.height)
+        bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+        val blurred = BlurMath.gaussian(pixels, bitmap.width, bitmap.height, sigma)
+        return FloatArray(blurred.size) {
+            val c = blurred[it]
+            0.2126f * ((c shr 16) and 0xFF) + 0.7152f * ((c shr 8) and 0xFF) + 0.0722f * (c and 0xFF)
+        }
+    }
+
+    /** The framing of the wallpaper was found on a screenshot */
+    fun isAligned(context: Context): Boolean = sourceKey(context)?.let { WallpaperAlignment.read(it) } != null
+
+    /** An alignment below this likeness of image and screenshot is not kept */
+    const val MIN_MATCH = 0.85f
+    private const val ALIGN_BLUR = 2f
 
     /** Background of the card at [position], as a Samsung widget with the [style] would show there */
     fun card(screen: Screen, position: CardPosition, style: WidgetBackground): Bitmap {

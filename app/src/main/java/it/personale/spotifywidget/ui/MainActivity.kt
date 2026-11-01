@@ -52,6 +52,7 @@ import it.personale.spotifywidget.widget.WidgetRenderer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.math.roundToInt
 
 /**
  * Settings, drawn as a page of One UI 9. Also opened by the launcher when
@@ -208,6 +209,29 @@ private fun BackgroundSection(resumes: Int) {
         }
     }
 
+    // A screenshot of the Home screen: how One UI frames the wallpaper (see Alignment)
+    val pickScreenshot = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        Toast.makeText(context, R.string.align_working, Toast.LENGTH_SHORT).show()
+        scope.launch {
+            val widgets = app.store.read().positions.values
+            val found = withContext(Dispatchers.Default) { WallpaperBlur.align(context, uri, widgets) }
+            val text = when {
+                found == null -> context.getString(R.string.align_unreadable)
+                found.match < WallpaperBlur.MIN_MATCH ->
+                    context.getString(R.string.align_failed, (found.match * 100).roundToInt())
+                else -> context.getString(
+                    R.string.align_done,
+                    (found.matchBefore * 100).roundToInt(),
+                    (found.match * 100).roundToInt(),
+                )
+            }
+            Toast.makeText(context, text, Toast.LENGTH_LONG).show()
+            picked++
+            WidgetRenderer.renderAll(context.applicationContext)
+        }
+    }
+
     fun change(updated: WidgetBackground) {
         background = updated
         scope.launch {
@@ -278,6 +302,19 @@ private fun BackgroundSection(resumes: Int) {
                     )
                 }
             }
+            if (background.blur && (status == WallpaperBlur.Status.READY || status == WallpaperBlur.Status.PICKED)) {
+                rows += {
+                    OneUiRow(
+                        title = stringResource(R.string.align_title),
+                        summary = stringResource(
+                            if (blur?.aligned == true) R.string.align_summary_done else R.string.align_summary,
+                        ),
+                        onClick = {
+                            pickScreenshot.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                        },
+                    )
+                }
+            }
         }
     }
     OneUiCard(rows)
@@ -321,12 +358,19 @@ private class BlurInfo(
     val positionsKnown: Boolean,
     /** App that draws the wallpaper, when it is not a plain image */
     val drawnBy: Pair<String, String>?,
+    /** How One UI frames the wallpaper was found on a screenshot */
+    val aligned: Boolean,
 )
 
 private suspend fun blurInfo(context: Context): BlurInfo {
     val positions = context.app.store.read().positions
     val ids = AppWidgetManager.getInstance(context).getAppWidgetIds(WidgetRenderer.component(context))
-    return BlurInfo(WallpaperBlur.status(context), ids.all { it in positions }, WallpaperBlur.drawnBy(context))
+    return BlurInfo(
+        WallpaperBlur.status(context),
+        ids.all { it in positions },
+        WallpaperBlur.drawnBy(context),
+        WallpaperBlur.isAligned(context),
+    )
 }
 
 /** The page of the system where the app gets the access to all files */
