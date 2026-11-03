@@ -34,8 +34,10 @@ import it.personale.spotifywidget.data.progressWithThumb
 import it.personale.spotifywidget.playback.Playback
 import it.personale.spotifywidget.ui.LaunchSpotifyActivity
 import it.personale.spotifywidget.ui.MainActivity
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.roundToInt
 
 /**
@@ -57,6 +59,19 @@ object WidgetRenderer {
     @Volatile
     private var progressWidths: Map<Int, Float?> = emptyMap()
 
+    /** The title of each widget as its list shows it (see [TitleService]) */
+    private val titles = ConcurrentHashMap<Int, Title>()
+
+    /**
+     * The launcher keeps the title apart from the other updates (see
+     * [TitleService]); null until it asked for a title
+     */
+    @Volatile
+    var titleSeparate: Boolean? = null
+
+    /** Title • artist as the player shows it: text, font, size (sp) and color */
+    data class Title(val text: String, val family: String?, val sizeSp: Float, val color: Int)
+
     fun component(context: Context) = ComponentName(context, SpotifyWidgetReceiver::class.java)
 
     suspend fun renderAll(context: Context) = render(context, null)
@@ -73,9 +88,46 @@ object WidgetRenderer {
             targets.forEach { put(it, metricsOf(manager.getAppWidgetOptions(it)).progressWidthDp) }
         }
         targets.forEach { id ->
-            manager.updateAppWidget(id, build(context, data, id, manager.getAppWidgetOptions(id)))
+            val options = manager.getAppWidgetOptions(id)
+            // Kept before the update: the launcher may ask for the title as soon as it gets it
+            val title = data.state.nowPlaying?.takeIf { data.hasAccess }
+                ?.let { titleOf(context, it, data.state.background, options) }
+            val newTitle = if (title == null) titles.remove(id) != null else titles.put(id, title) != title
+            manager.updateAppWidget(id, build(context, data, id, options))
+            // The list keeps its item until it is told that the title changed
+            @Suppress("DEPRECATION")
+            if (title != null && newTitle) manager.notifyAppWidgetViewDataChanged(id, R.id.title_list)
         }
         drawn = true
+    }
+
+    /** The one item of the list of the widget [id]: its title (see [TitleService]) */
+    fun titleViews(context: Context, id: Int): RemoteViews {
+        val title = titles[id] ?: runBlocking {
+            val state = context.app.store.read()
+            val options = AppWidgetManager.getInstance(context).getAppWidgetOptions(id)
+            state.nowPlaying?.let { titleOf(context, it, state.background, options) }
+        }?.let { titles.putIfAbsent(id, it) ?: it }
+        return RemoteViews(context.packageName, R.layout.widget_title).apply {
+            if (title == null) {
+                setTextViewText(R.id.title, "")
+                return@apply
+            }
+            setTextViewText(R.id.title, inFont(title.text, title.family))
+            setTextViewTextSize(R.id.title, TypedValue.COMPLEX_UNIT_SP, title.sizeSp)
+            setTextColor(R.id.title, title.color)
+        }
+    }
+
+    private fun titleOf(context: Context, nowPlaying: NowPlaying, style: WidgetBackground, options: Bundle): Title {
+        val font = context.app.systemFont
+        return Title(
+            text = if (nowPlaying.artist.isBlank()) nowPlaying.title else "${nowPlaying.title} • ${nowPlaying.artist}",
+            family = font?.medium ?: font?.family,
+            sizeSp = TITLE_SP * metricsOf(options).scale,
+            // On the cover or on the dark veil white, on the light veil dark (see applyStyle)
+            color = if (!style.cover && !style.dark) LIGHT_TEXT else WidgetColors.WHITE,
+        )
     }
 
     /**
@@ -134,6 +186,7 @@ object WidgetRenderer {
 
     /** The widgets [ids] were removed from the home screen */
     suspend fun forget(context: Context, ids: IntArray) {
+        ids.forEach { titles.remove(it) }
         context.app.store.update { state -> state.copy(positions = state.positions - ids.toSet()) }
     }
 
@@ -218,13 +271,13 @@ object WidgetRenderer {
         views.setContentDescription(R.id.output, context.getString(R.string.output_description, data.device))
         views.setOnClickPendingIntent(R.id.output, outputSwitcher(context, data.output))
 
-        views.setTextViewText(
-            R.id.title,
-            inFont(
-                if (nowPlaying.artist.isBlank()) nowPlaying.title else "${nowPlaying.title} • ${nowPlaying.artist}",
-                font?.medium ?: font?.family,
-            ),
-        )
+        // The title that scrolls is the item of the list (TitleService). The same
+        // text, hidden, gives the row its height.
+        val title = titleOf(context, nowPlaying, style, options)
+        views.setTextViewText(R.id.title_size, inFont(title.text, title.family))
+        views.setViewVisibility(R.id.title_size, View.INVISIBLE)
+        @Suppress("DEPRECATION")
+        views.setRemoteAdapter(R.id.title_list, titleIntent(context, id))
 
         val position = nowPlaying.positionAt(System.currentTimeMillis())
         views.setProgress(progressWithThumb(position, nowPlaying.durationMs, metrics.progressWidthDp))
@@ -375,6 +428,12 @@ object WidgetRenderer {
     /** Makes the intents of each widget different: extras do not count */
     fun widgetUri(id: Int): Uri = Uri.fromParts("widget", id.toString(), null)
 
+    /** The list of the title of the widget [id]: one for each widget */
+    private fun titleIntent(context: Context, id: Int): Intent =
+        Intent(context, TitleService::class.java)
+            .setData(widgetUri(id))
+            .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
+
     // Size of the player when the launcher does not report it
     private const val DEFAULT_BAR_DP = 290f
     private const val DEFAULT_WIDTH_DP = 360
@@ -411,7 +470,7 @@ internal fun RemoteViews.applyMetrics(metrics: PlayerMetrics, density: Float) {
     setViewPadding(R.id.content, px(24f), px(14f), px(20f), px(8f))
     // Text as large as in the media player of One UI (measured)
     setTextViewTextSize(R.id.device, TypedValue.COMPLEX_UNIT_SP, DEVICE_SP * scale)
-    setTextViewTextSize(R.id.title, TypedValue.COMPLEX_UNIT_SP, TITLE_SP * scale)
+    setTextViewTextSize(R.id.title_size, TypedValue.COMPLEX_UNIT_SP, TITLE_SP * scale)
     setTextViewTextSize(R.id.elapsed, TypedValue.COMPLEX_UNIT_SP, TIME_SP * scale)
     setTextViewTextSize(R.id.duration, TypedValue.COMPLEX_UNIT_SP, TIME_SP * scale)
     BUTTONS.forEach { (id, padding) ->
@@ -451,7 +510,7 @@ internal fun RemoteViews.applyStyle(style: WidgetBackground, wallpaperColor: Int
     setBackground(style, wallpaperColor)
     val light = !style.cover && !style.dark
     setTextColor(R.id.device, if (light) LIGHT_SECONDARY else DARK_SECONDARY)
-    setTextColor(R.id.title, if (light) LIGHT_TEXT else WidgetColors.WHITE)
+    // The title is in its list, with its color (see WidgetRenderer.titleViews)
     setTextColor(R.id.elapsed, if (light) LIGHT_TERTIARY else DARK_TERTIARY)
     setTextColor(R.id.duration, if (light) LIGHT_TERTIARY else DARK_TERTIARY)
     val icons = if (light) LIGHT_TEXT else WidgetColors.WHITE

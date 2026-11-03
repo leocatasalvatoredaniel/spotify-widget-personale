@@ -66,6 +66,8 @@
     <string name="font_samsung">Testo nel font di sistema Samsung: «%1$s» (%2$s).</string>
     <string name="font_android">Font di sistema Samsung non trovato: il testo usa il font di Android.</string>
     <string name="font_android_report">Font di sistema Samsung non trovato: il testo usa il font di Android. Elenchi dei font letti: %1$s. Font Samsung nel telefono: %2$s.%3$s</string>
+    <string name="title_separate">Il titolo del widget è separato dagli aggiornamenti della barra: scorre senza ripartire da capo.</string>
+    <string name="title_redrawn">Questa versione di Android applica di nuovo il titolo del widget a ogni movimento della barra: mentre la musica suona lo scorrimento riparte da capo.</string>
     <string name="font_not_loaded"> La famiglia «%1$s» è negli elenchi, ma Android non la carica per le app.</string>
     <string name="spotify_title">Spotify</string>
     <string name="liked_title">Brani che ti piacciono</string>

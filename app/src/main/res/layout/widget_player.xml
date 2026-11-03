@@ -73,33 +73,44 @@
             </LinearLayout>
 
             <!-- Title • artist: centered, scrolling when it does not fit. No Spotify
-                 logo: in a widget it cannot scroll with the text as in the system player -->
-            <LinearLayout
+                 logo: in a widget it cannot scroll with the text as in the system player.
+                 The scrolling title is the one item of title_list (widget_title, see
+                 TitleService): the launcher applies every update of the widget again to
+                 all its views, and a title set again starts scrolling from the beginning,
+                 several times a second while the progress bar moves. The items of a list
+                 are left as they are. -->
+            <RelativeLayout
                 android:id="@+id/title_row"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:layout_marginEnd="4dp"
-                android:gravity="center"
-                android:orientation="horizontal">
+                android:layout_marginEnd="4dp">
 
+                <!-- The same text, not shown in the widget: it gives the row the height
+                     of the title, as the list has none until the launcher loads it.
+                     Shown in the preview of the widget, where the list is empty. -->
                 <TextView
-                    android:id="@+id/title"
-                    android:layout_width="wrap_content"
+                    android:id="@+id/title_size"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:ellipsize="marquee"
-                    android:focusable="true"
-                    android:focusableInTouchMode="true"
+                    android:ellipsize="end"
                     android:fontFamily="sans-serif-medium"
-                    android:marqueeRepeatLimit="marquee_forever"
+                    android:gravity="center_horizontal"
+                    android:importantForAccessibility="no"
                     android:singleLine="true"
                     android:text="@string/widget_preview_title"
                     android:textColor="@color/widget_text"
-                    android:textSize="12.5sp">
+                    android:textSize="12.5sp" />
 
-                    <requestFocus />
-                </TextView>
-            </LinearLayout>
+                <AdapterViewFlipper
+                    android:id="@+id/title_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_alignTop="@id/title_size"
+                    android:layout_alignBottom="@id/title_size"
+                    android:animateFirstView="false"
+                    android:autoStart="false" />
+            </RelativeLayout>
 
             <!-- Extra height goes here, as in the system player -->
             <FrameLayout

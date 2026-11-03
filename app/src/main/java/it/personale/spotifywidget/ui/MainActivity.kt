@@ -158,6 +158,10 @@ private fun SettingsScreen(resumes: Int) {
                 )
             },
         )
+        // Whether the launcher leaves the title of the widget scrolling while the bar moves
+        remember(resumes) { WidgetRenderer.titleSeparate }?.let { separate ->
+            OneUiFooter(stringResource(if (separate) R.string.title_separate else R.string.title_redrawn))
+        }
         if (samsungActivities != null && output.kind != Playback.OutputSwitcher.Kind.SAMSUNG) {
             OneUiFooter(
                 stringResource(R.string.output_samsung_activities, samsungActivities.joinToString().ifEmpty { "–" }),
