@@ -102,10 +102,14 @@
                     android:textColor="@color/widget_text"
                     android:textSize="12.5sp" />
 
+                <!-- Height match_parent, not wrap_content: measured with a height "at
+                     most", AdapterViewFlipper takes the width of its first item
+                     (AdapterViewAnimator.onMeasure checks the height mode for the width)
+                     and the title ends up narrow and at the start of the row -->
                 <AdapterViewFlipper
                     android:id="@+id/title_list"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
                     android:layout_alignTop="@id/title_size"
                     android:layout_alignBottom="@id/title_size"
                     android:animateFirstView="false"
