@@ -22,12 +22,12 @@ object BlurMath {
 
     /**
      * Blur of a wallpaper drawn by an app of wallpapers (One UI reports the
-     * photo of the Home screen so): its image is the photo before One UI
-     * blurs it on the Home screen, so it gets that blur too. Estimated (about
-     * 12 dp) on screenshots of Samsung widgets next to these ones on the same
-     * wallpaper; a rough estimate, the screenshots differ by about 10/255.
+     * photo of the Home screen so): One UI shows the photo a little blurred
+     * on the Home screen, so its image gets that blur too. Measured (about
+     * 4 dp) on a screenshot of the Home screen against the photo itself;
+     * the Samsung widget there blurs it about 17-18 dp in all.
      */
-    const val HOME_BLUR_DP = 12f
+    const val HOME_BLUR_DP = 4f
 
     /** Spread of the blur (dp) for the image of the wallpaper */
     fun blurDp(drawnByApp: Boolean): Float =

@@ -291,7 +291,11 @@ private fun BackgroundSection(resumes: Int) {
                 )
             }
             val status = blur?.status
-            if (background.blur && (status == WallpaperBlur.Status.NO_IMAGE || status == WallpaperBlur.Status.PICKED)) {
+            // The photo is placed exactly as the Home screen shows it: offered
+            // also when the phone gives its own image, which may be framed otherwise
+            if (background.blur && status != null && status != WallpaperBlur.Status.NO_ACCESS &&
+                status != WallpaperBlur.Status.NOT_SUPPORTED
+            ) {
                 rows += {
                     OneUiRow(
                         title = stringResource(R.string.wallpaper_image_title),
@@ -306,7 +310,7 @@ private fun BackgroundSection(resumes: Int) {
                     )
                 }
             }
-            if (background.blur && (status == WallpaperBlur.Status.READY || status == WallpaperBlur.Status.PICKED)) {
+            if (background.blur && status == WallpaperBlur.Status.READY) {
                 rows += {
                     OneUiRow(
                         title = stringResource(R.string.align_title),

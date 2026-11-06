@@ -54,7 +54,7 @@
     <string name="blur_no_image">Il telefono non dà all\'app l\'immagine dello sfondo%1$s. In Immagine dello sfondo scegli la stessa foto che usi come sfondo: il widget sfocherà quella. Fino ad allora ha il velo senza sfocatura.</string>
     <string name="blur_drawn_by">, che è disegnato da «%1$s» (%2$s)</string>
     <string name="wallpaper_image_title">Immagine dello sfondo</string>
-    <string name="wallpaper_image_pick">Scegli la foto che usi come sfondo</string>
+    <string name="wallpaper_image_pick">Scegli la foto che usi come sfondo: il widget la mette come la Home, senza allineare</string>
     <string name="wallpaper_image_picked">Foto scelta</string>
     <string name="align_title">Allinea lo sfondo</string>
     <string name="align_summary">One UI può mostrare lo sfondo ingrandito o spostato. Scegli uno screenshot di una pagina della Home senza widget</string>

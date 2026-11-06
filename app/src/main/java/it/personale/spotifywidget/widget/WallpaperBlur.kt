@@ -85,8 +85,17 @@ object WallpaperBlur {
         }
     }
 
-    /** Photo chosen in the settings, used when the phone gives no image of its wallpaper */
+    /**
+     * Photo chosen in the settings: the one used as wallpaper. Preferred to
+     * the image the phone gives, which One UI may show framed otherwise.
+     */
     fun pickedFile(context: Context) = File(context.filesDir, "wallpaper-picked")
+
+    /**
+     * Copy of the photo for the other widgets of the phone (the agenda of
+     * PoliTo), next to the file of the alignment
+     */
+    private fun sharedFile() = File(Environment.getExternalStorageDirectory(), ".sfondo-widget.jpg")
 
     /** Keeps the photo at [uri] as the image to blur */
     fun savePicked(context: Context, uri: Uri): Boolean = runCatching {
@@ -95,7 +104,10 @@ object WallpaperBlur {
         context.contentResolver.openInputStream(uri)?.use { input ->
             temporary.outputStream().use { input.copyTo(it) }
         } ?: return false
-        temporary.renameTo(file).also { context.app.blurredScreen = null }
+        val saved = temporary.renameTo(file)
+        if (saved && canRead()) runCatching { file.copyTo(sharedFile(), overwrite = true) }
+        context.app.blurredScreen = null
+        saved
     }.getOrDefault(false)
 
     /** Who draws the wallpaper when it is not a plain image: name and package */
@@ -130,24 +142,28 @@ object WallpaperBlur {
     private fun source(context: Context, width: Int, height: Int): WallpaperImage? {
         // A wallpaper drawn by an app is blurred on the Home screen too
         val live = Wallpaper.isLive(context)
-        if (canRead()) {
-            val manager = WallpaperManager.getInstance(context)
-            val id = runCatching { manager.getWallpaperId(WallpaperManager.FLAG_SYSTEM) }.getOrDefault(-1)
-            readWallpaper(manager, live, width, height)?.let { return WallpaperImage("system:$id", it, Source.SYSTEM, live) }
+        pickedFile(context).takeIf { it.exists() }?.let { picked ->
+            // Chosen before the access to the files: shared now
+            if (canRead() && !sharedFile().exists()) runCatching { picked.copyTo(sharedFile()) }
+            decodePhoto(picked, width, height)?.let {
+                return WallpaperImage("$PICKED_PREFIX${picked.lastModified()}", it, Source.PICKED, live)
+            }
         }
-        val picked = pickedFile(context).takeIf { it.exists() } ?: return null
-        val photo = decodePhoto(picked, width, height) ?: return null
-        return WallpaperImage("picked:${picked.lastModified()}", photo, Source.PICKED, live)
+        if (!canRead()) return null
+        val manager = WallpaperManager.getInstance(context)
+        val id = runCatching { manager.getWallpaperId(WallpaperManager.FLAG_SYSTEM) }.getOrDefault(-1)
+        return readWallpaper(manager, live, width, height)?.let { WallpaperImage("system:$id", it, Source.SYSTEM, live) }
     }
 
     /** Key of the image [source] would read, without reading it */
     fun sourceKey(context: Context): String? {
+        pickedFile(context).takeIf { it.exists() }?.let { return "$PICKED_PREFIX${it.lastModified()}" }
         if (canRead()) {
             val manager = WallpaperManager.getInstance(context)
             val id = runCatching { manager.getWallpaperId(WallpaperManager.FLAG_SYSTEM) }.getOrDefault(-1)
             return "system:$id"
         }
-        return pickedFile(context).takeIf { it.exists() }?.let { "picked:${it.lastModified()}" }
+        return null
     }
 
     /**
@@ -163,15 +179,24 @@ object WallpaperBlur {
         val live = Wallpaper.isLive(context)
         // The cache is checked before reading the image, which takes a while
         sourceKey(context)?.let { imageKey ->
-            val alignment = WallpaperAlignment.read(imageKey) ?: Alignment.NONE
+            val alignment = alignmentOf(imageKey)
             val key = "$imageKey:${alignment.format()}:${width}x$height:$density:$live"
             context.app.blurredScreen?.takeIf { it.key == key }?.let { return it }
         }
         val source = source(context, WORK_WIDTH, smallHeight) ?: return null
-        val alignment = WallpaperAlignment.read(source.key) ?: Alignment.NONE
+        val alignment = alignmentOf(source.key)
         val key = "${source.key}:${alignment.format()}:${width}x$height:$density:${source.live}"
         return blur(context, key, source, alignment, width, height)
     }
+
+    /**
+     * How the image [key] is placed on the screen. The photo chosen in the
+     * settings is the one the Home screen shows, filling the screen as it is
+     * (measured on a Galaxy S24 Ultra: the Samsung widgets blur exactly it);
+     * the image the phone gives may be framed otherwise (see [Alignment]).
+     */
+    private fun alignmentOf(key: String): Alignment =
+        if (key.startsWith(PICKED_PREFIX)) Alignment.NONE else WallpaperAlignment.read(key) ?: Alignment.NONE
 
     /** [source] on a screen [width] x [height], as One UI Home shows it, blurred */
     private fun blur(
@@ -354,4 +379,6 @@ object WallpaperBlur {
 
     /** Width of the blurred screen: the blur leaves no detail a larger image would keep */
     private const val WORK_WIDTH = 270
+
+    private const val PICKED_PREFIX = "picked:"
 }

@@ -59,7 +59,8 @@ class BlurMathTest {
     @Test
     fun aWallpaperDrawnByAnAppIsBlurredMore() {
         assertEquals(BlurMath.BLUR_DP, BlurMath.blurDp(drawnByApp = false), 0f)
-        // The blur of the Home screen and the one of the widget add up
-        assertEquals(20.8f, BlurMath.blurDp(drawnByApp = true), 0.1f)
+        // The blur of the Home screen (about 4 dp) and the one of the widget add up:
+        // about 17.5 dp, as measured next to a Samsung widget
+        assertEquals(17.5f, BlurMath.blurDp(drawnByApp = true), 0.1f)
     }
 }
