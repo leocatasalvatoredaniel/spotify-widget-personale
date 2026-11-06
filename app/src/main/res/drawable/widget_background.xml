@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Shown until the cover is loaded, and when a track has no cover -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <corners android:radius="@dimen/widget_radius" />
+    <solid android:color="@color/widget_background" />
+</shape>

@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Player in the style of the media player of the system: cover as the
+     background (already shaded, see PlayerBackground), output device, title
+     and artist, progress, controls. The renderer scales the sizes below to
+     the size of the widget (PlayerMetrics). -->
+<!-- The card keeps the margins of the One UI widgets: the launcher leaves
+     about 8 dp around third-party widgets, Samsung's own leave about 19 dp
+     above and below, so the card adds the difference -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingTop="@dimen/widget_margin_vertical"
+    android:paddingBottom="@dimen/widget_margin_vertical"
+    tools:ignore="UselessParent">
+
+    <FrameLayout
+        android:id="@android:id/background"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/widget_background"
+        android:clipToOutline="true">
+
+        <ImageView
+            android:id="@+id/art"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:importantForAccessibility="no"
+            android:scaleType="centerCrop" />
+
+        <LinearLayout
+            android:id="@+id/content"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipChildren="false"
+            android:clipToPadding="false"
+            android:orientation="vertical"
+            android:paddingStart="24dp"
+            android:paddingTop="14dp"
+            android:paddingEnd="20dp"
+            android:paddingBottom="8dp">
+
+            <!-- Where the music plays: opens the output switcher -->
+            <LinearLayout
+                android:id="@+id/output"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                tools:ignore="UseCompoundDrawables">
+
+                <TextView
+                    android:id="@+id/device"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:ellipsize="end"
+                    android:fontFamily="sans-serif-medium"
+                    android:singleLine="true"
+                    android:text="@string/device_this_phone"
+                    android:textColor="@color/widget_text_secondary"
+                    android:textSize="10sp" 
+                    tools:ignore="SmallSp" />
+
+                <ImageView
+                    android:id="@+id/output_icon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_marginStart="8dp"
+                    android:importantForAccessibility="no"
+                    android:src="@drawable/ic_media_output"
+                    android:tint="@color/widget_text" />
+            </LinearLayout>
+
+            <!-- Title • artist: centered, scrolling when it does not fit. No Spotify
+                 logo: in a widget it cannot scroll with the text as in the system player.
+                 The scrolling title is the one item of title_list (widget_title, see
+                 TitleService): the launcher applies every update of the widget again to
+                 all its views, and a title set again starts scrolling from the beginning,
+                 several times a second while the progress bar moves. The items of a list
+                 are left as they are. -->
+            <RelativeLayout
+                android:id="@+id/title_row"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:layout_marginEnd="4dp">
+
+                <!-- The same text, not shown in the widget: it gives the row the height
+                     of the title, as the list has none until the launcher loads it.
+                     Shown in the preview of the widget, where the list is empty. -->
+                <TextView
+                    android:id="@+id/title_size"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:ellipsize="end"
+                    android:fontFamily="sans-serif-medium"
+                    android:gravity="center_horizontal"
+                    android:importantForAccessibility="no"
+                    android:singleLine="true"
+                    android:text="@string/widget_preview_title"
+                    android:textColor="@color/widget_text"
+                    android:textSize="12.5sp" />
+
+                <!-- Height match_parent, not wrap_content: measured with a height "at
+                     most", AdapterViewFlipper takes the width of its first item
+                     (AdapterViewAnimator.onMeasure checks the height mode for the width)
+                     and the title ends up narrow and at the start of the row -->
+                <AdapterViewFlipper
+                    android:id="@+id/title_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_alignTop="@id/title_size"
+                    android:layout_alignBottom="@id/title_size"
+                    android:animateFirstView="false"
+                    android:autoStart="false" />
+            </RelativeLayout>
+
+            <!-- Extra height goes here, as in the system player -->
+            <FrameLayout
+                android:id="@+id/spacer"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:minHeight="6dp" />
+
+            <!-- Progress: rest of the track, played part with the glow, thumb -->
+            <FrameLayout
+                android:id="@+id/progress_box"
+                android:layout_width="match_parent"
+                android:clipChildren="false"
+                android:layout_height="@dimen/progress_height"
+                android:layout_marginEnd="4dp">
+
+                <ProgressBar
+                    android:id="@+id/progress_track"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:max="10000"
+                    android:progress="6500"
+                    android:progressDrawable="@drawable/widget_progress_track" />
+
+                <ProgressBar
+                    android:id="@+id/progress"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:max="10000"
+                    android:progress="3500"
+                    android:progressDrawable="@drawable/widget_progress"
+                    android:secondaryProgress="3500" />
+
+                <ProgressBar
+                    android:id="@+id/progress_thumb"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:max="10000"
+                    android:progress="3500"
+                    android:progressDrawable="@drawable/widget_progress_thumb"
+                    android:secondaryProgress="3500" />
+            </FrameLayout>
+
+            <LinearLayout
+                android:id="@+id/times"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="4dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/elapsed"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:fontFeatureSettings="tnum"
+                    android:singleLine="true"
+                    android:textColor="@color/widget_text_tertiary"
+                    android:textSize="10.5sp" 
+                    tools:ignore="SmallSp" />
+
+                <TextView
+                    android:id="@+id/duration"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFeatureSettings="tnum"
+                    android:singleLine="true"
+                    android:textColor="@color/widget_text_tertiary"
+                    android:textSize="10.5sp" 
+                    tools:ignore="SmallSp" />
+            </LinearLayout>
+
+            <!-- Spotify action, previous, play/pause, next, Spotify action -->
+            <LinearLayout
+                android:id="@+id/controls"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="16dp"
+                android:baselineAligned="false"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <FrameLayout
+                    android:id="@+id/cell_start"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1">
+
+                    <ImageButton
+                        android:id="@+id/action_start"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_gravity="center"
+                        android:background="@drawable/widget_button_plain"
+                        android:padding="12dp"
+                        android:scaleType="fitCenter"
+                        android:tint="@color/widget_text"
+                        android:visibility="invisible"
+                        tools:ignore="ContentDescription" />
+                </FrameLayout>
+
+                <FrameLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1">
+
+                    <ImageButton
+                        android:id="@+id/previous"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_gravity="center"
+                        android:background="@drawable/widget_button_round"
+                        android:contentDescription="@string/action_previous"
+                        android:padding="13dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_previous"
+                        android:tint="@color/widget_text" />
+                </FrameLayout>
+
+                <FrameLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1">
+
+                    <ImageButton
+                        android:id="@+id/play_pause"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_gravity="center"
+                        android:background="@drawable/widget_button_round"
+                        android:contentDescription="@string/action_play"
+                        android:padding="12dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_play"
+                        android:tint="@color/widget_text" />
+                </FrameLayout>
+
+                <FrameLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1">
+
+                    <ImageButton
+                        android:id="@+id/next"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_gravity="center"
+                        android:background="@drawable/widget_button_round"
+                        android:contentDescription="@string/action_next"
+                        android:padding="13dp"
+                        android:scaleType="fitCenter"
+                        android:src="@drawable/ic_next"
+                        android:tint="@color/widget_text" />
+                </FrameLayout>
+
+                <FrameLayout
+                    android:id="@+id/cell_end"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1">
+
+                    <ImageButton
+                        android:id="@+id/action_end"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_gravity="center"
+                        android:background="@drawable/widget_button_plain"
+                        android:padding="12dp"
+                        android:scaleType="fitCenter"
+                        android:tint="@color/widget_text"
+                        android:visibility="invisible"
+                        tools:ignore="ContentDescription" />
+                </FrameLayout>
+            </LinearLayout>
+        </LinearLayout>
+    </FrameLayout>
+</FrameLayout>
