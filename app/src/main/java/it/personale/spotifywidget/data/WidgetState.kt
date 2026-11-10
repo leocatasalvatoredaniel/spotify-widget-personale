@@ -2,6 +2,7 @@ package it.personale.spotifywidget.data
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /** JSON of the saved state: fields of older versions are ignored */
@@ -85,9 +86,43 @@ data class WidgetBackground(
 data class WidgetState(
     val nowPlaying: NowPlaying? = null,
     val background: WidgetBackground = WidgetBackground(),
-    /** Where each widget is on the screen, by widget id: learned from the taps */
+    /**
+     * Where each widget was on the screen, by widget id, as earlier versions
+     * kept it: used until the widget is tapped again
+     */
     val positions: Map<Int, CardPosition> = emptyMap(),
+    /** The taps that tell where each widget is on the screen, by widget id */
+    val taps: Map<Int, List<WidgetTap>> = emptyMap(),
+    /** How much the launcher scales the widgets, as last measured from the taps */
+    val launcherScale: Float? = null,
 )
+
+/**
+ * A tap on a view of a widget: where the view is on the screen and where it
+ * is in the card (see CardLocator)
+ */
+@Serializable
+data class WidgetTap(
+    /** The view tapped (name of a CardLocator.Tapped) */
+    val view: String,
+    /** Top left corner of the view on the screen, in pixels */
+    val x: Int,
+    val y: Int,
+    /** Top left corner of the view in the card, in pixels of the layout */
+    val offsetX: Float,
+    val offsetY: Float,
+    /** Size of the card in the layout when it was tapped */
+    val cardWidth: Int,
+    val cardHeight: Int,
+    /** Width of the screen when it was tapped: the resolution can change */
+    val screenWidth: Int,
+) {
+    /** Tapped on a widget of the same size on the same screen */
+    fun sameWidget(other: WidgetTap): Boolean = sameWidget(other.cardWidth, other.cardHeight, other.screenWidth)
+
+    fun sameWidget(cardWidth: Int, cardHeight: Int, screenWidth: Int): Boolean =
+        abs(this.cardWidth - cardWidth) <= 2 && abs(this.cardHeight - cardHeight) <= 2 && this.screenWidth == screenWidth
+}
 
 /**
  * Card of a widget on the screen, in pixels of the screen in portrait.
@@ -101,8 +136,10 @@ data class CardPosition(
     val bottom: Int,
     /** Width of the screen when it was measured: the resolution can change */
     val screenWidth: Int,
-    /** Bounds of the card itself; false when worked out from a button */
+    /** The scale of the launcher was measured; in earlier versions, bounds of the card itself */
     val exact: Boolean,
+    /** How much the launcher scales the widget: the card is this much smaller than its layout */
+    val scale: Float = 1f,
 ) {
     val width: Int get() = right - left
     val height: Int get() = bottom - top
@@ -112,7 +149,7 @@ data class CardPosition(
         if (width == screenWidth || screenWidth <= 0) return this
         val scale = width.toFloat() / screenWidth
         fun scaled(value: Int) = (value * scale).roundToInt()
-        return CardPosition(scaled(left), scaled(top), scaled(right), scaled(bottom), width, exact)
+        return CardPosition(scaled(left), scaled(top), scaled(right), scaled(bottom), width, exact, this.scale)
     }
 }
 

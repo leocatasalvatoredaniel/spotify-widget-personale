@@ -27,6 +27,7 @@ import it.personale.spotifywidget.data.NowPlaying
 import it.personale.spotifywidget.data.PROGRESS_MAX
 import it.personale.spotifywidget.data.WidgetBackground
 import it.personale.spotifywidget.data.WidgetState
+import it.personale.spotifywidget.data.WidgetTap
 import it.personale.spotifywidget.data.formatTime
 import it.personale.spotifywidget.data.THUMB_DP
 import it.personale.spotifywidget.data.progressStepMs
@@ -157,8 +158,9 @@ object WidgetRenderer {
 
     /**
      * A tap on the widget [id] told where the [tapped] view is on the screen
-     * ([bounds]): keeps the place of the card, and draws the widget again if
-     * its blurred background has to move
+     * ([bounds]): keeps it with the other taps, which together tell where
+     * the card is and how much the launcher scales it (see [CardLocator]),
+     * and draws the widget again if its blurred background has to move
      */
     suspend fun recordTap(context: Context, id: Int, tapped: CardLocator.Tapped, bounds: Rect) {
         if (id == AppWidgetManager.INVALID_APPWIDGET_ID) return
@@ -166,29 +168,78 @@ object WidgetRenderer {
         val (screenWidth, _) = WallpaperBlur.portraitScreen(context) ?: return
         val options = AppWidgetManager.getInstance(context).getAppWidgetOptions(id)
         val density = context.resources.displayMetrics.density
-        val found = CardLocator.locate(
-            tapped = tapped,
-            bounds = CardLocator.Bounds(bounds.left, bounds.top, bounds.right, bounds.bottom),
-            cardWidth = (cardWidthDp(options) * density).roundToInt(),
-            cardHeight = (cardHeightDp(options) * density).roundToInt(),
-            metrics = metricsOf(options),
-            density = density,
-            screenWidth = screenWidth,
-        ) ?: return
+        val (cardWidth, cardHeight) = cardSize(options, density)
+        val offset = CardLocator.offset(tapped, cardWidth, cardHeight, metricsOf(options), density) ?: return
+        // Only the corner of the bounds: their size is the one before the launcher scales the widget
+        val tap = WidgetTap(tapped.name, bounds.left, bounds.top, offset.x, offset.y, cardWidth, cardHeight, screenWidth)
+        val shared = LauncherScale.shared(refresh = true)
         var before: CardPosition? = null
+        var measured: Float? = null
         val state = context.app.store.update { state ->
-            before = state.positions[id]
-            state.copy(positions = state.positions + (id to CardLocator.update(before, found, density)))
+            val prior = state.launcherScale ?: shared ?: 1f
+            before = cardPosition(state, id, cardWidth, cardHeight, screenWidth)
+            val taps = CardLocator.add(tapsOf(state, id, cardWidth, cardHeight, screenWidth), tap, prior, CardLocator.tolerance(screenWidth))
+            measured = CardLocator.solve(taps, prior)?.takeIf { it.measured }?.scale
+            state.copy(
+                taps = state.taps + (id to taps),
+                positions = state.positions - id,
+                launcherScale = measured ?: state.launcherScale,
+            )
         }
+        measured?.let { LauncherScale.share(it) }
         val background = state.background
-        if (state.positions[id] != before && background.blur && !background.cover) render(context, intArrayOf(id))
+        val after = cardPosition(state, id, cardWidth, cardHeight, screenWidth)
+        if (after != before && background.blur && !background.cover) {
+            // A new scale moves the background of every widget
+            render(context, if (measured != null) null else intArrayOf(id))
+        }
     }
 
     /** The widgets [ids] were removed from the home screen */
     suspend fun forget(context: Context, ids: IntArray) {
         ids.forEach { titles.remove(it) }
-        context.app.store.update { state -> state.copy(positions = state.positions - ids.toSet()) }
+        context.app.store.update { state ->
+            state.copy(positions = state.positions - ids.toSet(), taps = state.taps - ids.toSet())
+        }
     }
+
+    /**
+     * The taps that tell where the widget [id] is now: not those on a widget
+     * of another size or on another screen. A card tapped with an earlier
+     * version counts as a tap: its corner was right, its size was not.
+     */
+    private fun tapsOf(state: WidgetState, id: Int, cardWidth: Int, cardHeight: Int, screenWidth: Int): List<WidgetTap> {
+        state.taps[id]?.let { taps -> return taps.filter { it.sameWidget(cardWidth, cardHeight, screenWidth) } }
+        val earlier = state.positions[id]?.takeIf { it.exact && it.screenWidth == screenWidth } ?: return emptyList()
+        return listOf(WidgetTap(CardLocator.Tapped.CARD.name, earlier.left, earlier.top, 0f, 0f, cardWidth, cardHeight, screenWidth))
+    }
+
+    /** Where the card of the widget [id] is on the screen, if its taps told; [cardWidth] x [cardHeight] in the layout */
+    private fun cardPosition(state: WidgetState, id: Int, cardWidth: Int, cardHeight: Int, screenWidth: Int): CardPosition? {
+        if (cardWidth <= 0 || cardHeight <= 0) return null
+        val prior = state.launcherScale ?: LauncherScale.shared() ?: 1f
+        CardLocator.solve(tapsOf(state, id, cardWidth, cardHeight, screenWidth), prior)?.let {
+            return CardLocator.position(it, cardWidth, cardHeight, screenWidth)
+        }
+        // Worked out from a button by an earlier version: out of place, until the next tap
+        return state.positions[id]?.onScreen(screenWidth)
+    }
+
+    /** Whether the taps told where each widget is, and the scale of the launcher if they measured it */
+    suspend fun placement(context: Context): Placement {
+        val state = context.app.store.read()
+        val ids = AppWidgetManager.getInstance(context).getAppWidgetIds(component(context))
+        return Placement(
+            known = ids.isNotEmpty() && ids.all { it in state.taps || it in state.positions },
+            scale = state.launcherScale ?: LauncherScale.shared(),
+        )
+    }
+
+    class Placement(val known: Boolean, val scale: Float?)
+
+    /** Size of the card in the layout, in pixels: before the launcher scales the widget */
+    private fun cardSize(options: Bundle, density: Float): Pair<Int, Int> =
+        (cardWidthDp(options) * density).roundToInt() to (cardHeightDp(options) * density).roundToInt()
 
     /** Sizes of the card in portrait, where the home screen of a phone is used */
     private fun metricsOf(options: Bundle) = PlayerMetrics.forSize(cardWidthDp(options), cardHeightDp(options))
@@ -250,7 +301,9 @@ object WidgetRenderer {
             }
             // Until a tap tells where the widget is, the veil without blur
             style.blur -> data.blurred?.let { screen ->
-                data.state.positions[id]?.let { WallpaperBlur.card(screen, it, style) }
+                val (cardWidth, cardHeight) = cardSize(options, density)
+                cardPosition(data.state, id, cardWidth, cardHeight, screen.screenWidth)
+                    ?.let { WallpaperBlur.card(screen, it, style) }
             }
             else -> null
         }

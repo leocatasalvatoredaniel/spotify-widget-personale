@@ -3,6 +3,7 @@ package it.personale.spotifywidget
 import it.personale.spotifywidget.data.CardPosition
 import it.personale.spotifywidget.data.StateJson
 import it.personale.spotifywidget.data.WidgetState
+import it.personale.spotifywidget.data.WidgetTap
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -37,10 +38,21 @@ class StateJsonTest {
     }
 
     @Test
-    fun positionsOfTheWidgetsAreKept() {
-        val state = WidgetState(positions = mapOf(42 to CardPosition(67, 245, 1019, 705, 1080, exact = true)))
+    fun tapsOnTheWidgetsAreKept() {
+        val tap = WidgetTap("PLAY", 471, 540, 483f, 353f, 1136, 548, 1080)
+        val state = WidgetState(taps = mapOf(42 to listOf(tap)), launcherScale = 0.838f)
         val json = StateJson.encodeToString(WidgetState.serializer(), state)
         assertEquals(state, StateJson.decodeFromString(WidgetState.serializer(), json))
+    }
+
+    @Test
+    fun positionsOfEarlierVersionsAreRead() {
+        // Before the scale of the launcher was measured: the card as its tap told it
+        val json = """{"positions":{"42":{"left":67,"top":245,"right":1203,"bottom":793,"screenWidth":1080,"exact":true}}}"""
+        val state = StateJson.decodeFromString(WidgetState.serializer(), json)
+        assertEquals(CardPosition(67, 245, 1203, 793, 1080, exact = true, scale = 1f), state.positions[42])
+        assertTrue(state.taps.isEmpty())
+        assertEquals(null, state.launcherScale)
         // Saved before the blur: no blur, no positions
         val old = StateJson.decodeFromString(WidgetState.serializer(), """{"background":{"cover":false}}""")
         assertFalse(old.background.blur)

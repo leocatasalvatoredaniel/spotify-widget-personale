@@ -56,6 +56,7 @@ class WidgetApp : Application() {
             KeyStore.getInstance("AndroidKeyStore").apply { load(null) }.deleteEntry("spotify-tokens")
         }
         runCatching { deleteDatabase("androidx.work.workdb") }
+        WallpaperBlur.removeOldFiles()
     }
 }
 

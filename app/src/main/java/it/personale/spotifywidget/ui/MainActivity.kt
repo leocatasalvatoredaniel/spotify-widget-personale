@@ -213,29 +213,6 @@ private fun BackgroundSection(resumes: Int) {
         }
     }
 
-    // A screenshot of the Home screen: how One UI frames the wallpaper (see Alignment)
-    val pickScreenshot = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri == null) return@rememberLauncherForActivityResult
-        Toast.makeText(context, R.string.align_working, Toast.LENGTH_SHORT).show()
-        scope.launch {
-            val widgets = app.store.read().positions.values
-            val found = withContext(Dispatchers.Default) { WallpaperBlur.align(context, uri, widgets) }
-            val text = when {
-                found == null -> context.getString(R.string.align_unreadable)
-                found.match < WallpaperBlur.MIN_MATCH ->
-                    context.getString(R.string.align_failed, (found.match * 100).roundToInt())
-                else -> context.getString(
-                    R.string.align_done,
-                    (found.matchBefore * 100).roundToInt(),
-                    (found.match * 100).roundToInt(),
-                )
-            }
-            Toast.makeText(context, text, Toast.LENGTH_LONG).show()
-            picked++
-            WidgetRenderer.renderAll(context.applicationContext)
-        }
-    }
-
     fun change(updated: WidgetBackground) {
         background = updated
         scope.launch {
@@ -291,11 +268,7 @@ private fun BackgroundSection(resumes: Int) {
                 )
             }
             val status = blur?.status
-            // The photo is placed exactly as the Home screen shows it: offered
-            // also when the phone gives its own image, which may be framed otherwise
-            if (background.blur && status != null && status != WallpaperBlur.Status.NO_ACCESS &&
-                status != WallpaperBlur.Status.NOT_SUPPORTED
-            ) {
+            if (background.blur && (status == WallpaperBlur.Status.NO_IMAGE || status == WallpaperBlur.Status.PICKED)) {
                 rows += {
                     OneUiRow(
                         title = stringResource(R.string.wallpaper_image_title),
@@ -306,19 +279,6 @@ private fun BackgroundSection(resumes: Int) {
                         summaryIsValue = status == WallpaperBlur.Status.PICKED,
                         onClick = {
                             pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
-                        },
-                    )
-                }
-            }
-            if (background.blur && status == WallpaperBlur.Status.READY) {
-                rows += {
-                    OneUiRow(
-                        title = stringResource(R.string.align_title),
-                        summary = stringResource(
-                            if (blur?.aligned == true) R.string.align_summary_done else R.string.align_summary,
-                        ),
-                        onClick = {
-                            pickScreenshot.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                         },
                     )
                 }
@@ -340,15 +300,21 @@ private fun BackgroundSection(resumes: Int) {
             }
         }
         val info = blur
-        val where = if (info?.positionsKnown == true) R.string.blur_moved else R.string.blur_tap
+        // Where the widget is and how much the launcher scales it come from the taps
+        val where = when {
+            info?.positionsKnown != true -> stringResource(R.string.blur_tap)
+            info.scale == null -> stringResource(R.string.blur_scale_unknown)
+            else -> stringResource(R.string.blur_scale, (info.scale * 100).roundToInt()) + " " +
+                stringResource(R.string.blur_moved)
+        }
         val explanation = when {
             !background.blur -> stringResource(wallpaper)
             !canRead && info?.status != WallpaperBlur.Status.PICKED -> stringResource(R.string.blur_access)
             info == null -> null
             info.status == WallpaperBlur.Status.READY ->
-                stringResource(R.string.blur_ready) + " " + stringResource(where)
+                stringResource(R.string.blur_ready) + " " + where
             info.status == WallpaperBlur.Status.PICKED ->
-                stringResource(R.string.blur_picked) + " " + stringResource(where)
+                stringResource(R.string.blur_picked) + " " + where
             info.status == WallpaperBlur.Status.NO_IMAGE -> stringResource(
                 R.string.blur_no_image,
                 info.drawnBy?.let { (name, pkg) -> stringResource(R.string.blur_drawn_by, name, pkg) }.orEmpty(),
@@ -364,21 +330,15 @@ private class BlurInfo(
     val status: WallpaperBlur.Status,
     /** A tap told where each widget is */
     val positionsKnown: Boolean,
+    /** How much the launcher scales the widgets, when two taps measured it */
+    val scale: Float?,
     /** App that draws the wallpaper, when it is not a plain image */
     val drawnBy: Pair<String, String>?,
-    /** How One UI frames the wallpaper was found on a screenshot */
-    val aligned: Boolean,
 )
 
 private suspend fun blurInfo(context: Context): BlurInfo {
-    val positions = context.app.store.read().positions
-    val ids = AppWidgetManager.getInstance(context).getAppWidgetIds(WidgetRenderer.component(context))
-    return BlurInfo(
-        WallpaperBlur.status(context),
-        ids.all { it in positions },
-        WallpaperBlur.drawnBy(context),
-        WallpaperBlur.isAligned(context),
-    )
+    val placement = WidgetRenderer.placement(context)
+    return BlurInfo(WallpaperBlur.status(context), placement.known, placement.scale, WallpaperBlur.drawnBy(context))
 }
 
 /** The page of the system where the app gets the access to all files */

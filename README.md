@@ -76,10 +76,10 @@ I widget Samsung sfocano lo sfondo che hanno dietro, ne rinforzano i colori e lo
 
 1. In **Sfondo del widget** spegni *Copertina come sfondo* e attiva **Sfocatura**.
 2. Android apre la pagina **Accesso a tutti i file**: attivalo per *Widget Musica*. Da Android 13 è l'unico modo per un'app di leggere lo sfondo del telefono. L'app non ha accesso a internet, quindi lo sfondo non esce dal telefono.
-3. **Tocca il widget una volta**, anche su un pulsante: Android non dice all'app dove si trova il widget sulla schermata Home, il tocco sì. Se sposti il widget, toccalo di nuovo.
-4. Per la posizione esatta scegli in **Immagine dello sfondo** la stessa foto che usi come sfondo, così com'è nella galleria: il widget la mette come la Home (riempie lo schermo, centrata) e non serve allineare. Sul Galaxy S24 Ultra di prova la foto coincide con la Home al 99,5% e il widget Samsung sfoca proprio lei. L'app ne lascia una copia (`.sfondo-widget.jpg` nella memoria del telefono) per il widget del Politecnico. Se cambi sfondo, scegli di nuovo la foto. Senza foto scelta resta **Allinea lo sfondo**: con uno screenshot di una pagina della Home senza widget l'app cerca come One UI ingrandisce e sposta l'immagine data dal telefono; è meno preciso.
+3. **Tocca il widget in due punti diversi**, per esempio play e brano successivo, oppure un pulsante e un punto vuoto della card. Android non dice all'app dove si trova il widget sulla schermata Home: lo dice il tocco. Con una griglia fitta One UI Home mostra i widget più piccoli della loro misura (all'84% sul Galaxy S24 Ultra di prova): il tocco dà l'angolo del pulsante com'è sullo schermo, ma la sua misura prima del rimpicciolimento, quindi da un tocco solo lo sfondo risulterebbe ingrandito e fuori posto. Due pulsanti distano sullo schermo quanto nel layout, per la scala: dai due tocchi l'app la misura, una volta sola. Se sposti il widget, basta toccarlo di nuovo una volta. Sotto **Sfondo del widget** è scritta la scala misurata.
+4. L'immagine dello sfondo riempie lo schermo, centrata, come la mostra la Home: sul telefono di prova coincide con uno screenshot della Home al 99,98%, ed è quello che sfoca il widget Samsung nello stesso punto (differenza di circa 5/255 con il codice dell'app).
 
-Su One UI anche una foto può essere disegnata da un'app di sfondi (Android la segnala come sfondo animato): l'app prova comunque a leggerne l'immagine, ma la foto scelta in **Immagine dello sfondo** ha la precedenza.
+Su One UI anche una foto può essere disegnata da un'app di sfondi (Android la segnala come sfondo animato): l'app prova comunque a leggerne l'immagine. Se il telefono non la dà, compare **Immagine dello sfondo**: scegli la stessa foto che usi come sfondo e il widget sfoca quella. Se cambi lo sfondo, sceglila di nuovo.
 
 Sfocatura, colori rinforzati e velo al 50%, scuro e chiaro, sono misurati sulla Home accanto a un widget Samsung al 50% sullo stesso sfondo: la differenza è di circa 5/255. Scuro e chiaro hanno la stessa sfocatura e la stessa trasparenza, cambia solo il colore del velo. Opacità 0 e 100 sono stimate dall'anteprima delle impostazioni dei widget Samsung.
 
@@ -99,7 +99,7 @@ Il colore della barra segue la stessa regola di One UI: la tinta della copertina
 - Angoli arrotondati e sfocatura da Android 12.
 - **Sfocatura durante lo scorrimento**: i widget Samsung sono sfocati dal launcher in tempo reale, quindi mentre scorri tra le schermate mostrano sempre lo sfondo che hanno dietro. Il widget di un'app è un'immagine fissa: mentre scorri si sposta con il widget, e torna allineata quando la schermata si ferma. Se ti dà fastidio, spegni _Sfocatura_.
 - **Sfondi disegnati da un'app** (One UI li segnala come animati, anche quando sono una foto): One UI mostra la foto un po' sfocata sulla Home, circa 4 dp (misurati su uno screenshot confrontato con la foto), e il widget aggiunge quella sfocatura.
-- **Sfocatura**: lo sfondo si sposta con il widget solo dopo un tocco; Samsung Home non deve far scorrere lo sfondo tra le pagine (è l'impostazione predefinita).
+- **Sfocatura**: lo sfondo si sposta con il widget solo dopo un tocco; Samsung Home non deve far scorrere lo sfondo tra le pagine (è l'impostazione predefinita). La scala misurata vale anche per il widget del Politecnico, che la legge dallo stesso file (`.scala-widget-home` nella memoria del telefono).
 
 ## Sviluppo
 
