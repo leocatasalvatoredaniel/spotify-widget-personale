@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Corners of the media player of One UI 9 (measured: 34 dp), larger than
+         the system radius of widgets (16 dp on One UI) -->
+    <dimen name="widget_radius">34dp</dimen>
+    <!-- Extra margin above and below the card, as the One UI widgets (see widget_player) -->
+    <dimen name="widget_margin_vertical">10.5dp</dimen>
+
+    <!-- Progress of the widget, measured on the media player of One UI -->
+    <dimen name="progress_height">16dp</dimen>
+    <dimen name="progress_track">4.5dp</dimen>
+    <dimen name="progress_track_radius">2.25dp</dimen>
+    <dimen name="progress_thumb">16dp</dimen>
+    <dimen name="progress_thumb_radius">8dp</dimen>
+    <dimen name="progress_thumb_ring">2dp</dimen>
+    <dimen name="progress_gap">3.5dp</dimen>
+    <dimen name="progress_glow_radius">16dp</dimen>
+    <!-- The glow is the box of the thumb grown by 8 dp on every side (32 dp):
+         it passes the bar above and below, the layout does not clip it -->
+    <dimen name="progress_glow_overhang">-8dp</dimen>
+</resources>

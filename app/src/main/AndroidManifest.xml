@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Only to read the wallpaper and blur it behind the widget, as the
+         Samsung widgets: from Android 13 the system gives the wallpaper only
+         to the apps with access to all files. Asked by the settings when the
+         blur is turned on; the app has no access to the internet. -->
+    <uses-permission
+        android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
+        tools:ignore="ScopedStorage" />
+
+    <queries>
+        <!-- Launching and controlling the Spotify app -->
+        <package android:name="com.spotify.music" />
+        <!-- Output switcher of the system, as the button of the media player:
+             the media panel of Samsung, otherwise the one of Android -->
+        <package android:name="com.samsung.android.mdx.quickboard" />
+        <intent>
+            <action android:name="com.android.settings.panel.action.MEDIA_OUTPUT" />
+        </intent>
+        <intent>
+            <action android:name="com.android.systemui.action.LAUNCH_MEDIA_OUTPUT_DIALOG" />
+        </intent>
+    </queries>
+
+    <application
+        android:name=".WidgetApp"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.WidgetMusica">
+
+        <!-- Settings, also opened when the widget is edited from the home screen -->
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
+        <!-- Play pressed with Spotify closed: opens Spotify and starts the music -->
+        <activity
+            android:name=".ui.LaunchSpotifyActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.WidgetMusica.Translucent" />
+
+        <!-- Reads what Spotify is playing and controls it, as the media player of the system -->
+        <service
+            android:name=".playback.MediaListenerService"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
+
+        <!-- The scrolling title of the widget, as the item of a list: see TitleService -->
+        <service
+            android:name=".widget.TitleService"
+            android:exported="false"
+            android:permission="android.permission.BIND_REMOTEVIEWS" />
+
+        <receiver
+            android:name=".widget.SpotifyWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/spotify_widget_info" />
+        </receiver>
+
+    </application>
+
+</manifest>

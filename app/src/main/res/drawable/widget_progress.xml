@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Played part of the progress, as in the media player of One UI: the bar
+     (ending under the thumb) and the glow around the thumb, both tinted with
+     the color of the cover. The thumb itself is widget_progress_thumb, the
+     rest of the track widget_progress_track. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Glow around the thumb (secondary progress, same value): the box of the
+         thumb grown by 8 dp on every side, so it is centered on the thumb -->
+    <item android:id="@android:id/secondaryProgress">
+        <scale
+            android:scaleGravity="start|center_vertical"
+            android:scaleWidth="100%">
+            <layer-list>
+                <item
+                    android:gravity="end|center_vertical"
+                    android:width="@dimen/progress_thumb"
+                    android:height="@dimen/progress_thumb">
+                    <inset android:inset="@dimen/progress_glow_overhang">
+                        <shape android:shape="oval">
+                            <gradient
+                                android:centerColor="#99FFFFFF"
+                                android:endColor="#00FFFFFF"
+                                android:gradientRadius="@dimen/progress_glow_radius"
+                                android:startColor="#FFFFFFFF"
+                                android:type="radial" />
+                        </shape>
+                    </inset>
+                </item>
+            </layer-list>
+        </scale>
+    </item>
+
+    <item android:id="@android:id/progress">
+        <scale
+            android:scaleGravity="start|center_vertical"
+            android:scaleWidth="100%">
+            <layer-list>
+                <item
+                    android:gravity="center_vertical|fill_horizontal"
+                    android:height="@dimen/progress_track"
+                    android:right="@dimen/progress_thumb_radius">
+                    <shape>
+                        <corners android:radius="@dimen/progress_track_radius" />
+                        <solid android:color="@android:color/white" />
+                    </shape>
+                </item>
+            </layer-list>
+        </scale>
+    </item>
+</layer-list>

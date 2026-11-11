@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Track still to play: it starts a small gap after the thumb, with a round
+     end, as in the media player of One UI. Its progress is the rest of the
+     track (max - progress), drawn from the end. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@android:id/progress">
+        <scale
+            android:scaleGravity="end|center_vertical"
+            android:scaleWidth="100%">
+            <layer-list>
+                <item
+                    android:gravity="center_vertical|fill_horizontal"
+                    android:height="@dimen/progress_track"
+                    android:left="@dimen/progress_gap">
+                    <shape>
+                        <corners android:radius="@dimen/progress_track_radius" />
+                        <solid android:color="#80FFFFFF" />
+                    </shape>
+                </item>
+            </layer-list>
+        </scale>
+    </item>
+</layer-list>

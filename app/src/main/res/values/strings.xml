@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Widget Musica</string>
+    <string name="widget_label">Musica</string>
+    <string name="widget_description">Spotify come il player del sistema: copertina, avanzamento e comandi</string>
+
+    <!-- Widget -->
+    <string name="widget_no_access">Apri Widget Musica e concedi l\'accesso alle notifiche</string>
+    <string name="widget_open_spotify">Avvia un brano su Spotify</string>
+    <string name="widget_preview_title">Brano • Artista</string>
+    <string name="device_this_phone">Questo smartphone</string>
+    <string name="device_wired">Cuffie con cavo</string>
+    <string name="device_connect">Spotify Connect</string>
+    <string name="output_description">Uscita audio: %1$s. Cambia dispositivo</string>
+    <string name="action_play">Riproduci</string>
+    <string name="action_pause">Metti in pausa</string>
+    <string name="action_next">Brano successivo</string>
+    <string name="action_previous">Brano precedente</string>
+    <string name="spotify_missing">Spotify non è installato</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Widget Musica</string>
+    <string name="access_title">Accesso alle notifiche</string>
+    <string name="access_explanation">Serve per vedere in tempo reale cosa suona Spotify e per i comandi, come fa il player del sistema. L\'app non legge né salva le notifiche.</string>
+    <string name="widget_title">Widget</string>
+    <string name="widget_add">Aggiungi alla schermata Home</string>
+    <string name="widget_add_summary">Misura consigliata 4×2</string>
+    <string name="widget_pinned">Widget aggiunto alla schermata Home</string>
+    <string name="widget_pin_unsupported">Tieni premuto su uno spazio vuoto della schermata Home → Widget → Widget Musica</string>
+    <string name="output_title">Pulsante di uscita</string>
+    <string name="output_samsung">Pannello multimediale Samsung</string>
+    <string name="output_android">Pannello di uscita di Android</string>
+    <string name="output_spotify">Spotify</string>
+    <string name="output_samsung_activities">Schermate di «Media and devices» apribili da altre app: %1$s</string>
+    <string name="background_title">Sfondo del widget</string>
+    <string name="background_cover">Copertina come sfondo</string>
+    <string name="background_opacity">Opacità</string>
+    <string name="background_colors">Colori</string>
+    <string name="background_dark">Scuro</string>
+    <string name="background_light">Chiaro</string>
+    <string name="background_cover_footer">La copertina del brano, sfumata come nel player del sistema. Spegnila per uno sfondo come i widget Samsung.</string>
+    <string name="background_samsung_footer">Sfondo velato come i widget Samsung. Per somigliare ai widget Samsung della tua Home usa la stessa opacità.</string>
+    <string name="wallpaper_color_found">Il velo prende il colore dello sfondo del telefono.</string>
+    <string name="wallpaper_color_missing">Il telefono non comunica il colore dello sfondo, quindi il velo è grigio neutro.</string>
+    <string name="wallpaper_color_live">Lo sfondo del telefono è animato e non comunica il suo colore, quindi il velo è grigio neutro.</string>
+    <string name="blur_title">Sfocatura</string>
+    <string name="blur_summary">Sfoca lo sfondo del telefono dietro al widget, come i widget Samsung</string>
+    <string name="blur_summary_access">Consenti l\'accesso a tutti i file</string>
+    <string name="blur_access">Per leggere lo sfondo del telefono serve l\'accesso a tutti i file: da Android 13 è l\'unico modo per un\'app. L\'app non ha accesso a internet, quindi lo sfondo non esce dal telefono.</string>
+    <string name="blur_ready">Lo sfondo dietro al widget è sfocato come nei widget Samsung.</string>
+    <string name="blur_picked">Il widget sfoca la foto scelta in Immagine dello sfondo: se cambi lo sfondo del telefono, sceglila di nuovo.</string>
+    <string name="blur_tap">Tocca il widget una volta, anche su un pulsante: Android non dice all\'app dove si trova sulla schermata Home. Fino ad allora il widget ha il velo senza sfocatura.</string>
+    <string name="blur_scale_unknown">Tocca il widget in due punti diversi, per esempio play e brano successivo: la Home può mostrare i widget più piccoli e dai due tocchi l\'app misura di quanto. Fino ad allora lo sfondo dietro al widget può essere fuori posto.</string>
+    <string name="blur_scale">La Home mostra i widget al %1$d%% della loro misura, e il widget ne tiene conto.</string>
+    <string name="blur_moved">Se sposti il widget, toccalo una volta perché l\'app sappia dove si trova.</string>
+    <string name="blur_no_image">Il telefono non dà all\'app l\'immagine dello sfondo%1$s. In Immagine dello sfondo scegli la stessa foto che usi come sfondo: il widget sfocherà quella. Fino ad allora ha il velo senza sfocatura.</string>
+    <string name="blur_drawn_by">, che è disegnato da «%1$s» (%2$s)</string>
+    <string name="wallpaper_image_title">Immagine dello sfondo</string>
+    <string name="wallpaper_image_pick">Scegli la foto che usi come sfondo</string>
+    <string name="wallpaper_image_picked">Foto scelta</string>
+    <string name="font_samsung">Testo nel font di sistema Samsung: «%1$s» (%2$s).</string>
+    <string name="font_android">Font di sistema Samsung non trovato: il testo usa il font di Android.</string>
+    <string name="font_android_report">Font di sistema Samsung non trovato: il testo usa il font di Android. Elenchi dei font letti: %1$s. Font Samsung nel telefono: %2$s.%3$s</string>
+    <string name="title_separate">Il titolo del widget è separato dagli aggiornamenti della barra: scorre senza ripartire da capo.</string>
+    <string name="title_redrawn">Questa versione di Android applica di nuovo il titolo del widget a ogni movimento della barra: mentre la musica suona lo scorrimento riparte da capo.</string>
+    <string name="font_not_loaded"> La famiglia «%1$s» è negli elenchi, ma Android non la carica per le app.</string>
+    <string name="spotify_title">Spotify</string>
+    <string name="liked_title">Brani che ti piacciono</string>
+    <string name="liked_summary">Il pulsante + del widget salva qui il brano in ascolto</string>
+    <string name="open_failed">Impossibile aprire la schermata</string>
+</resources>
