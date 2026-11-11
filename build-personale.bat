@@ -30,8 +30,13 @@ if not exist local.properties (
   echo sdk.dir=%LOCALAPPDATA:\=/%/Android/Sdk> local.properties
 )
 
+rem Without the APK of an earlier build, an APK after the build is the new one
+del /q app\build\outputs\apk\release\*.apk 2>nul
+
 call gradlew.bat assembleRelease
-if errorlevel 1 (
+rem Gradle can lose its background process right after "BUILD SUCCESSFUL" and
+rem report an error ("Could not dispatch a message to the daemon"): the APK is there
+if errorlevel 1 if not exist app\build\outputs\apk\release\*.apk (
   echo.
   echo Compilazione non riuscita: cerca "What went wrong" qui sopra.
   pause
